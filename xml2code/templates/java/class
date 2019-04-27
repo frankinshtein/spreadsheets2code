@@ -1,4 +1,4 @@
-package {{args.package}};
+package {{lang.package}};
 
 /*
  file was automatically generated

@@ -22,6 +22,7 @@ class Language:
         self.classes = {}
         self.extension = ""
         self.prefix = args.prefix
+        self.args = args
 
 
     def add_class(self, name, cls):
@@ -42,6 +43,32 @@ class Language:
             return self.classes[name]
 
         return Class(name, self.get_nice_class_name(name), True)
+
+    def create_field(self, name, tpstr):
+        nice_name = self.get_field_name(name)
+
+        tp = None
+
+        if not tpstr:
+            tp = self.get_class("string")
+
+        if tpstr == "id":
+            tp = self.get_class("string")
+
+        if tpstr == 'string' or tpstr == 'str':
+            tp = self.get_class("string")
+
+        array = False
+        if tpstr[0] == "[":
+            array = True
+            tpstr = tpstr[1:-1]
+
+        if not tp:
+            tp = self.get_class(tpstr)
+
+        return Field(name, nice_name, tp, array)
+
+
 
 
 
@@ -79,16 +106,12 @@ class Class:
         else:
             self.nice_name = name
 
-def gen(args, xml_res_file, dest_folder, mappings):
-    global user_mp
-    user_mp = mappings
-
-    lang = args.language
+def gen(args, xml_res_file, dest_folder):
 
     sys.path.append(os.path.join(os.path.dirname(__file__), "templates"))
 
-    module = __import__(lang)
-    config = module.create(args)
+    module = __import__(args.language)
+    lang = module.create(args)
 
     if not os.path.exists(dest_folder):
         os.makedirs(dest_folder)
@@ -99,7 +122,7 @@ def gen(args, xml_res_file, dest_folder, mappings):
     doc = minidom.parse(xml_res_file)
     root = doc.documentElement
 
-    folder = os.path.split(__file__)[0] + "/templates/" + lang
+    folder = os.path.split(__file__)[0] + "/templates/" + lang.name
     env = Environment(trim_blocks=True, lstrip_blocks=True,
                       loader=FileSystemLoader(folder))
 
@@ -114,7 +137,7 @@ def gen(args, xml_res_file, dest_folder, mappings):
             continue
 
         class_name = class_node.nodeName
-        cls = Class(class_name, config.get_nice_class_name(class_name))
+        cls = Class(class_name, lang.get_nice_class_name(class_name))
 
         classes.append(cls)
 
@@ -123,32 +146,9 @@ def gen(args, xml_res_file, dest_folder, mappings):
 
         for attr in attrs:
             name = attr.name
-            nice_name = config.get_field_name(name)
-            tpstr = attr.value
-            tp = None
 
-            if not tpstr:
-                tp = config.get_class("string")
-
-            if tpstr == "id":
-                tp = config.get_class("string")
-
-            if tpstr == 'string' or tpstr == 'str':
-                tp = config.get_class("string")
-
-            array = False
-            if tpstr[0] == "[":
-                array = True
-                tpstr = tpstr[1:-1]
-
-            if not tp:
-                tp = config.get_class(tpstr)
-
-                #if array:
-                #    array_name ="ArrayList<{}>".format(tp.nice_name)
-                #    tp = Class(array_name, array_name)
-
-            cls.fields.append(Field(name, nice_name, tp, array))
+            field = lang.create_field(name, attr.value)
+            cls.fields.append(field)
 
             if name == "id":
                 cls.has_id = True
@@ -156,21 +156,21 @@ def gen(args, xml_res_file, dest_folder, mappings):
 
         buffer = io.StringIO()
 
-        template_args = {"cls": cls, "args":args, "loader":loader}
+        template_args = {"cls": cls, "lang":lang, "loader":loader}
 
         buffer.write(env.get_template("class").render(**template_args))
-        save_if_changed(dest_folder + cls.nice_name + config.extension, buffer.getvalue())
+        save_if_changed(dest_folder + cls.nice_name + lang.extension, buffer.getvalue())
 
     classes_with_id = filter(lambda v: v.has_id, classes)
     classes_without_id = filter(lambda v: not v.has_id, classes)
 
     template_args = {"classes": classes, "classes_with_id": classes_with_id,
                      "classes_without_id": classes_without_id,
-                     "args": args, "loader":loader}
+                     "lang": lang, "loader":loader}
 
     buffer = io.StringIO()
     buffer.write(env.get_template("loader").render(**template_args))
-    save_if_changed(dest_folder + loader + config.extension, buffer.getvalue())
+    save_if_changed(dest_folder + loader + lang.extension, buffer.getvalue())
 
 
 
@@ -190,4 +190,4 @@ if __name__ == "__main__":
 
 
     args = parser.parse_args()
-    gen(args, args.xml, args.dest + "/", None)
+    gen(args, args.xml, args.dest + "/")
