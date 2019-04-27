@@ -1,0 +1,2 @@
+
+type_string = "dsfsf"

@@ -1,4 +1,6 @@
 # spreadsheets2code
+download credentials.json:
+https://developers.google.com/sheets/api/quickstart/python
 
 example spreadsheet:
 

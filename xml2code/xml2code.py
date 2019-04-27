@@ -6,8 +6,18 @@ import os
 
 from xml.dom import minidom
 from jinja2 import Environment, FileSystemLoader
+import sys
 
+class Language:
+    def __init__(self, name):
+        self.name = name
+        self.classes = {}
 
+    def add_class(self, name, cls):
+        self.classes[name] = cls
+
+    def get_class(self, name):
+        return self.classes[name]
 
 def save_if_changed(name, content):
 
@@ -30,12 +40,12 @@ def first_rest_split(st):
     rest = items[1:]
     return first, rest
 
-def getNiceClassName(column):
+def get_nice_class_name(prefix, column):
     first, rest = first_rest_split(column)
     ret = first.capitalize() + ''.join(word.capitalize() for word in rest)
-    return "G" + ret
+    return prefix + ret
 
-def getFieldName(column):
+def get_field_name(column):
     first, rest = first_rest_split(column)
     ret = first + ''.join(word.capitalize() for word in rest)
     return ret
@@ -59,49 +69,16 @@ class Class:
         else:
             self.nice_name = name
 
-
-type_string = Class("String")
-type_int = Class("int")
-type_float = Class("float")
-type_double = Class("double")
-
-def_mappings = (type_string,
-                type_int,
-                type_float,
-                type_double)
-
-
-def get_mapping(lst, name):
-    for m in lst:
-        if m.name == name:
-            return m
-
-    return None
-
-user_mp = None
-
-
-def find_mapping(name, classes):
-    if user_mp:
-        mp = get_mapping(user_mp, name)
-        if mp:
-            return mp
-
-    mp = get_mapping(def_mappings, name)
-    if mp:
-        return mp
-
-    mp = get_mapping(classes, name)
-    if mp:
-        return mp
-
-    return None
-
-
-
-def gen2(args, xml_res_file, dest_folder, mappings):
+def gen(args, xml_res_file, dest_folder, mappings):
     global user_mp
     user_mp = mappings
+
+    lang = args.language
+
+    sys.path.append(os.path.join(os.path.dirname(__file__), "templates"))
+
+    module = __import__(lang)
+    config = module.config
 
     if not os.path.exists(dest_folder):
         os.makedirs(dest_folder)
@@ -116,25 +93,18 @@ def gen2(args, xml_res_file, dest_folder, mappings):
     env = Environment(trim_blocks=True, lstrip_blocks=True,
                       loader=FileSystemLoader(folder))
 
-    #class_h_template = env.get_template("java/class.java")
-    #class_cpp_template = env.get_template("class.cpp")
-
     import io
-
-
-    #classes_node = root.getElementsByTagName("class")[0]
 
     classes = []
 
-
-    loader = "Loader"
+    loader = args.prefix + args.loader
 
     for class_node in root.childNodes:
         if class_node.nodeType == class_node.TEXT_NODE:
             continue
 
         class_name = class_node.nodeName
-        cls = Class(class_name, getNiceClassName(class_name))
+        cls = Class(class_name, get_nice_class_name(args.prefix, class_name))
 
         classes.append(cls)
 
@@ -143,28 +113,28 @@ def gen2(args, xml_res_file, dest_folder, mappings):
 
         for attr in attrs:
             name = attr.name
-            nice_name = getFieldName(name)
+            nice_name = get_field_name(name)
             tpstr = attr.value
             tp = None
 
             if not tpstr:
-                tp = type_string
+                tp = config.get_class("string")
 
             if tpstr == "id":
-                tp = type_string
+                tp = config.get_class("string")
 
             if tpstr == 'string' or tpstr == 'str':
-                tp = type_string
+                tp = config.get_class("string")
 
             array = False
             if not tp:
                 if tpstr[0] == "*":
                     array = True
                     tpstr = tpstr[1:]
-                tp = get_mapping(def_mappings, tpstr)
+                tp = config.get_class("string")
 
                 if not tp:
-                    tp = Class(tpstr, getNiceClassName(tpstr), True)
+                    tp = Class(tpstr, get_nice_class_name(args.prefix, tpstr), True)
 
                 #if array:
                 #    array_name ="ArrayList<{}>".format(tp.nice_name)
@@ -180,16 +150,18 @@ def gen2(args, xml_res_file, dest_folder, mappings):
 
         template_args = {"cls": cls, "args":args, "loader":loader}
 
-        buffer.write(env.get_template("java/class.java").render(**template_args))
+        buffer.write(env.get_template("java/class").render(**template_args))
         save_if_changed(dest_folder + cls.nice_name + ".java", buffer.getvalue())
 
     classes_with_id = filter(lambda v: v.has_id, classes)
     classes_without_id = filter(lambda v: not v.has_id, classes)
 
-    template_args = {"classes": classes, "classes_with_id": classes_with_id, "classes_without_id": classes_without_id, "args": args, "loader":loader}
+    template_args = {"classes": classes, "classes_with_id": classes_with_id,
+                     "classes_without_id": classes_without_id,
+                     "args": args, "loader":loader}
 
     buffer = io.StringIO()
-    buffer.write(env.get_template("java/loader.java").render(**template_args))
+    buffer.write(env.get_template("java/loader").render(**template_args))
     save_if_changed(dest_folder + loader + ".java", buffer.getvalue())
 
 
@@ -199,12 +171,15 @@ if __name__ == "__main__":
 
     import argparse
     parser = argparse.ArgumentParser(
-        description="generates h/cpp files from oxygine xml")
+        description="generates code from exported xml")
     parser.add_argument("xml", help="xml file to process")
-    parser.add_argument("-p", "--package", help="com.package.name")
+    parser.add_argument("-l", "--language", help="language")
+    parser.add_argument("-p", "--package", help="com.package.name", default="com.package.name")
+    parser.add_argument("--prefix", help="generated classes prefix", default="G")
+    parser.add_argument("--loader", help="loader class name", default="Loader")
     parser.add_argument(
         "-d", "--dest", help="destination folder for generated classes", default=".")
 
 
     args = parser.parse_args()
-    gen2(args, args.xml, args.dest + "/", None)
+    gen(args, args.xml, args.dest + "/", None)
