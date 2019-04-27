@@ -8,10 +8,33 @@ from xml.dom import minidom
 from jinja2 import Environment, FileSystemLoader
 import sys
 
+
+
+def first_rest_split(st):
+    items = st.split('_')
+    first = items[0]
+    rest = items[1:]
+    return first, rest
+
+def get_nice_class_name_default(prefix, column):
+    first, rest = first_rest_split(column)
+    ret = first.capitalize() + ''.join(word.capitalize() for word in rest)
+    return prefix + ret
+
+def get_field_name_default(column):
+    first, rest = first_rest_split(column)
+    ret = first + ''.join(word.capitalize() for word in rest)
+    return ret
+
+
 class Language:
     def __init__(self, name):
         self.name = name
         self.classes = {}
+        self.extension = ""
+        self.get_nice_class_name = get_nice_class_name_default
+        self.get_field_name = get_field_name_default
+
 
     def add_class(self, name, cls):
         self.classes[name] = cls
@@ -33,22 +56,6 @@ def save_if_changed(name, content):
     with open(name, "w") as rd:
         rd.write(content)
 
-
-def first_rest_split(st):
-    items = st.split('_')
-    first = items[0]
-    rest = items[1:]
-    return first, rest
-
-def get_nice_class_name(prefix, column):
-    first, rest = first_rest_split(column)
-    ret = first.capitalize() + ''.join(word.capitalize() for word in rest)
-    return prefix + ret
-
-def get_field_name(column):
-    first, rest = first_rest_split(column)
-    ret = first + ''.join(word.capitalize() for word in rest)
-    return ret
 
 
 class Field:
@@ -89,7 +96,7 @@ def gen(args, xml_res_file, dest_folder, mappings):
     doc = minidom.parse(xml_res_file)
     root = doc.documentElement
 
-    folder = os.path.split(__file__)[0] + "/templates"
+    folder = os.path.split(__file__)[0] + "/templates/" + lang
     env = Environment(trim_blocks=True, lstrip_blocks=True,
                       loader=FileSystemLoader(folder))
 
@@ -104,7 +111,7 @@ def gen(args, xml_res_file, dest_folder, mappings):
             continue
 
         class_name = class_node.nodeName
-        cls = Class(class_name, get_nice_class_name(args.prefix, class_name))
+        cls = Class(class_name, config.get_nice_class_name(args.prefix, class_name))
 
         classes.append(cls)
 
@@ -113,7 +120,7 @@ def gen(args, xml_res_file, dest_folder, mappings):
 
         for attr in attrs:
             name = attr.name
-            nice_name = get_field_name(name)
+            nice_name = config.get_field_name(name)
             tpstr = attr.value
             tp = None
 
@@ -150,8 +157,8 @@ def gen(args, xml_res_file, dest_folder, mappings):
 
         template_args = {"cls": cls, "args":args, "loader":loader}
 
-        buffer.write(env.get_template("java/class").render(**template_args))
-        save_if_changed(dest_folder + cls.nice_name + ".java", buffer.getvalue())
+        buffer.write(env.get_template("class").render(**template_args))
+        save_if_changed(dest_folder + cls.nice_name + config.extension, buffer.getvalue())
 
     classes_with_id = filter(lambda v: v.has_id, classes)
     classes_without_id = filter(lambda v: not v.has_id, classes)
@@ -161,8 +168,8 @@ def gen(args, xml_res_file, dest_folder, mappings):
                      "args": args, "loader":loader}
 
     buffer = io.StringIO()
-    buffer.write(env.get_template("java/loader").render(**template_args))
-    save_if_changed(dest_folder + loader + ".java", buffer.getvalue())
+    buffer.write(env.get_template("loader").render(**template_args))
+    save_if_changed(dest_folder + loader + config.extension, buffer.getvalue())
 
 
 
@@ -173,7 +180,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="generates code from exported xml")
     parser.add_argument("xml", help="xml file to process")
-    parser.add_argument("-l", "--language", help="language")
+    parser.add_argument("-l", "--language", help="language", default="java")
     parser.add_argument("-p", "--package", help="com.package.name", default="com.package.name")
     parser.add_argument("--prefix", help="generated classes prefix", default="G")
     parser.add_argument("--loader", help="loader class name", default="Loader")
