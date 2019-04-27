@@ -186,12 +186,17 @@ def export_sheet(args, sheet_name, values):
         print("skipped {}".format(sheet_name))
         return None
 
+
+
     print("tab '{}'".format(sheet_name))
 
     response = values.get(spreadsheetId=args.src, range=sheet_name, valueRenderOption='UNFORMATTED_VALUE').execute()
 
 
     page = response.get('values', [])
+
+    if len(page) < 1:
+        return  None
 
     result = ""
 
@@ -253,6 +258,7 @@ def main(args):
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
+
     if os.path.exists('token.pickle'):
         with open('token.pickle', 'rb') as token:
             creds = pickle.load(token)
@@ -265,7 +271,7 @@ def main(args):
             creds = flow.run_local_server()
         # Save the credentials for the next run
         with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
+            pickle.dump(creds, token, protocol=2)
 
     service = build('sheets', 'v4', credentials=creds)
 

@@ -16,31 +16,34 @@ def first_rest_split(st):
     rest = items[1:]
     return first, rest
 
-def get_nice_class_name_default(prefix, column):
-    first, rest = first_rest_split(column)
-    ret = first.capitalize() + ''.join(word.capitalize() for word in rest)
-    return prefix + ret
-
-def get_field_name_default(column):
-    first, rest = first_rest_split(column)
-    ret = first + ''.join(word.capitalize() for word in rest)
-    return ret
-
-
 class Language:
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, args):
+        self.name = args.language
         self.classes = {}
         self.extension = ""
-        self.get_nice_class_name = get_nice_class_name_default
-        self.get_field_name = get_field_name_default
+        self.prefix = args.prefix
 
 
     def add_class(self, name, cls):
         self.classes[name] = cls
 
+    def get_nice_class_name(self, column):
+        first, rest = first_rest_split(column)
+        ret = first.capitalize() + ''.join(word.capitalize() for word in rest)
+        return self.prefix + ret
+
+    def get_field_name(self, column):
+        first, rest = first_rest_split(column)
+        ret = first + ''.join(word.capitalize() for word in rest)
+        return ret
+
     def get_class(self, name):
-        return self.classes[name]
+        if name in self.classes:
+            return self.classes[name]
+
+        return Class(name, self.get_nice_class_name(name), True)
+
+
 
 def save_if_changed(name, content):
 
@@ -85,7 +88,7 @@ def gen(args, xml_res_file, dest_folder, mappings):
     sys.path.append(os.path.join(os.path.dirname(__file__), "templates"))
 
     module = __import__(lang)
-    config = module.config
+    config = module.create(args)
 
     if not os.path.exists(dest_folder):
         os.makedirs(dest_folder)
@@ -111,7 +114,7 @@ def gen(args, xml_res_file, dest_folder, mappings):
             continue
 
         class_name = class_node.nodeName
-        cls = Class(class_name, config.get_nice_class_name(args.prefix, class_name))
+        cls = Class(class_name, config.get_nice_class_name(class_name))
 
         classes.append(cls)
 
@@ -134,14 +137,12 @@ def gen(args, xml_res_file, dest_folder, mappings):
                 tp = config.get_class("string")
 
             array = False
-            if not tp:
-                if tpstr[0] == "*":
-                    array = True
-                    tpstr = tpstr[1:]
-                tp = config.get_class("string")
+            if tpstr[0] == "[":
+                array = True
+                tpstr = tpstr[1:-1]
 
-                if not tp:
-                    tp = Class(tpstr, get_nice_class_name(args.prefix, tpstr), True)
+            if not tp:
+                tp = config.get_class(tpstr)
 
                 #if array:
                 #    array_name ="ArrayList<{}>".format(tp.nice_name)

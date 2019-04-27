@@ -17,7 +17,11 @@ public class {{cls.nice_name}}
 	public static Map<String, {{cls.nice_name}}> itemsMap = new HashMap<>();
     {% endif %}
     {% for field in cls.fields %}
+        {% if field.array %}
+    public List<{{ field.type.nice_name }}> {{ field.nice_name}};
+        {% else %}
     public {{ field.type.nice_name }} {{ field.nice_name}};
+        {% endif %}
     {% endfor %}
 
     public int indexInArray;
