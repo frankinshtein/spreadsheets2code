@@ -16,8 +16,11 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 def fix_field(name):
     res = ""
     for s in name:
-        if s.isdigit() or s.isalpha() or s == "_":
-            res += s
+        if s == "#":
+            res += "-"
+        else:
+            if s.isdigit() or s.isalpha() or s == "_":
+                res += s
     return res
 
 
@@ -92,19 +95,6 @@ def export_table(args, mat, sheet_name):
     y = 1
     result += '\t<' + sheet_name
 
-    fields = []
-
-    for x in range(mat.width):
-        name = mat.get(x, 0)
-
-        if name.startswith("*"):
-            continue
-
-        fields.append(name)
-
-
-
-
     y = 2
 
     for x in range(mat.width):
@@ -114,7 +104,7 @@ def export_table(args, mat, sheet_name):
         if not field:
             continue
 
-        if "@" in field:
+        if "#" in field:
             continue
 
         if field.startswith("*"):

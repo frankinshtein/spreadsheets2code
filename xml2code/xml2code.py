@@ -147,6 +147,10 @@ def gen(args, xml_res_file, dest_folder):
         for attr in attrs:
             name = attr.name
 
+            #skip preset field
+            if "-" in name:
+                continue
+
             field = lang.create_field(name, attr.value)
             cls.fields.append(field)
 

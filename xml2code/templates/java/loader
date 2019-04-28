@@ -18,7 +18,7 @@ import java.io.InputStream;
 
 public class {{loader}}
 {
-    public {{loader}}(InputStream stream){
+    public {{loader}}(InputStream stream, String preset){
 
         try {
             DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
@@ -64,7 +64,7 @@ public class {{loader}}
                         {{cls.nice_name}} item = new {{cls.nice_name}}();
                         {% endif %}
 
-                        item.init(child, items.size());
+                        item.init(child, items.size(), preset);
 
                         items.add(item);
                     }
@@ -83,15 +83,22 @@ public class {{loader}}
     }
 
 
-    public static String utilParse_String(Node node, String name)
+    public static String utilParse_String(Node node, String name, String preset)
     {
+        if (preset != null)
+        {
+            String key = key + "#" + preset;
+            String value = node.getAttributes().getNamedItem(key).getNodeValue();
+            if (value != null)
+                return value;
+        }
         String value = node.getAttributes().getNamedItem(name).getNodeValue();
         return value;
     }
 
-    public static int utilParse_int(Node node, String name)
+    public static int utilParse_int(Node node, String name, String preset)
     {
-        String value = node.getAttributes().getNamedItem(name).getNodeValue();
+        String value = utilParse_String(node, name, preset);
         try {
             return Integer.parseInt(value);
         } catch(NumberFormatException ex) {
@@ -99,9 +106,9 @@ public class {{loader}}
         }
     }
 
-    public static double utilParse_double(Node node, String name)
+    public static double utilParse_double(Node node, String name, String preset)
     {
-        String value = node.getAttributes().getNamedItem(name).getNodeValue();
+        String value = utilParse_String(node, name, preset);
         try {
             return Double.parseDouble(value);
         } catch(NumberFormatException ex) {
@@ -109,9 +116,9 @@ public class {{loader}}
         }
     }
 
-    public static float utilParse_float(Node node, String name)
+    public static float utilParse_float(Node node, String name, String preset)
     {
-        String value = node.getAttributes().getNamedItem(name).getNodeValue();
+        String value = utilParse_String(node, name, preset);
         try {
             return Float.parseFloat(value);
         } catch(NumberFormatException ex) {
@@ -119,7 +126,7 @@ public class {{loader}}
         }
     }
 
-    public static <T> T utilGetItem(Map<String, T> itemsMap, String name)
+    public static <T> T utilGetItem(Map<String, T> itemsMap, String name, String preset)
     {
         name = name.toLowerCase();
         return itemsMap.getOrDefault(name, null);

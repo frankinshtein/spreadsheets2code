@@ -44,12 +44,12 @@ public class {{cls.nice_name}}
     }
     {% endif %}
 
-    public void init(Node node, int index){
+    public void init(Node node, int index, String preset){
 		{% for field in cls.fields %}
 		{% if field.type.custom %}
-		this.{{field.nice_name}} =  {{field.type.nice_name}}.get({{loader}}.utilParse_String(node, "{{field.name}}"));
+		this.{{field.nice_name}} =  {{field.type.nice_name}}.get({{loader}}.utilParse_String(node, "{{field.name}}"), preset);
 		{% else  %}
-		this.{{field.nice_name}} = {{loader}}.utilParse_{{field.type.name}}(node, "{{field.name}}");
+		this.{{field.nice_name}} = {{loader}}.utilParse_{{field.type.name}}(node, "{{field.name}}", preset);
     	{% endif %}
     	{% endfor %}
     	indexInArray = index;
