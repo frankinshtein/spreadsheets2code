@@ -18,6 +18,8 @@ def fix_field(name):
     for s in name:
         if s == "#":
             res += "-"
+        elif s== ".":
+            res += "."
         else:
             if s.isdigit() or s.isalpha() or s == "_":
                 res += s

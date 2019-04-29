@@ -45,7 +45,6 @@ class Language:
         return Class(name, self.get_nice_class_name(name), True)
 
     def create_field(self, name, tpstr):
-        nice_name = self.get_field_name(name)
 
         tp = None
 
@@ -63,12 +62,39 @@ class Language:
             array = True
             tpstr = tpstr[1:-1]
 
+        named_list = False
+        if "." in name:
+            named_list = True
+            left, right = name.split(".")
+            name = left
+
         if not tp:
             tp = self.get_class(tpstr)
 
-        return Field(name, nice_name, tp, array)
+        nice_name = self.get_field_name(name)
+
+        return Field(name, nice_name, tp, array, named_list)
 
 
+    def make_fields(self, cls, attrs):
+
+        for attr in attrs:
+            name = attr.name
+
+            #skip preset field
+            if "-" in name:
+                continue
+
+
+            field = self.create_field(name, attr.value)
+            if cls.has_field(field.name):
+                print("skipped dublicate field '{}' in '{}'".format(name, cls.name))
+                continue
+
+            cls.fields.append(field)
+
+            if name == "id":
+                cls.has_id = True
 
 
 
@@ -89,11 +115,12 @@ def save_if_changed(name, content):
 
 
 class Field:
-    def __init__(self, name, nice_name, type, array):
+    def __init__(self, name, nice_name, type, array, named_list):
         self.type = type
         self.name = name
         self.nice_name = nice_name
         self.array = array
+        self.named_list = named_list
 
 class Class:
     def __init__(self, name, nice_name = None, custom = False):
@@ -105,6 +132,10 @@ class Class:
             self.nice_name = nice_name
         else:
             self.nice_name = name
+
+    def has_field(self, name):
+        names = list(map(lambda field: field.name, self.fields))
+        return name in names
 
 def gen(args, xml_res_file, dest_folder):
 
@@ -143,20 +174,7 @@ def gen(args, xml_res_file, dest_folder):
 
         attrs = class_node.attributes.values()
 
-
-        for attr in attrs:
-            name = attr.name
-
-            #skip preset field
-            if "-" in name:
-                continue
-
-            field = lang.create_field(name, attr.value)
-            cls.fields.append(field)
-
-            if name == "id":
-                cls.has_id = True
-
+        lang.make_fields(cls, attrs)
 
         buffer = io.StringIO()
 

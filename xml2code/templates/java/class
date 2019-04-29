@@ -17,8 +17,12 @@ public class {{cls.nice_name}}
 	public static Map<String, {{cls.nice_name}}> itemsMap = new HashMap<>();
     {% endif %}
     {% for field in cls.fields %}
-        {% if field.array %}
+        {% if field.array and field.named_list %}
+    public List<Tuple<String, List<{{ field.type.nice_name }}>>> {{ field.nice_name}};
+        {% elif field.array %}
     public List<{{ field.type.nice_name }}> {{ field.nice_name}};
+        {% elif field.named_list %}
+    public List<Tuple<String, {{ field.type.nice_name }}>> {{ field.nice_name}};
         {% else %}
     public {{ field.type.nice_name }} {{ field.nice_name}};
         {% endif %}
@@ -48,6 +52,10 @@ public class {{cls.nice_name}}
 		{% for field in cls.fields %}
 		{% if field.type.custom %}
 		this.{{field.nice_name}} =  {{field.type.nice_name}}.get({{loader}}.utilParse_String(node, "{{field.name}}"), preset);
+		{% elif field.named_list and field.array %}
+		this.{{field.nice_name}} = {{loader}}.utilParse_NamedList< List<{{field.type.name}}> >(node, "{{field.name}}", preset);
+		{% elif field.named_list %}
+		this.{{field.nice_name}} = {{loader}}.utilParse_NamedList<{{field.type.name}}>(node, "{{field.name}}", preset);
 		{% else  %}
 		this.{{field.nice_name}} = {{loader}}.utilParse_{{field.type.name}}(node, "{{field.name}}", preset);
     	{% endif %}
