@@ -2,6 +2,7 @@ from __future__ import print_function
 import pickle
 import os.path
 import codecs
+import time
 import collections
 
 from xml.sax.saxutils import quoteattr
@@ -276,7 +277,7 @@ def main(args):
 
 
     result = ""
-    result += "<data preset=" + '"' + args.preset + '"' + ">\n"
+    result += "<data timestamp=\"{}\"\n\tpreset=\"{}\" >\n".format(int(time.time()), args.preset)
 
     for sheet_item in sheets:
         name = sheet_item.get("properties", {}).get("title", "Sheet1")
@@ -294,6 +295,17 @@ def main(args):
     except OSError:
         pass
 
+    try:
+        with codecs.open(args.dest, "r", "utf-8-sig") as old:
+            data_old = old.read().split("\n", 1)[1]
+            data_new = result.split("\n", 1)[1]
+            if data_old == data_new:
+                print("there is not any changes in document: " + args.dest)
+                return
+
+    except IOError:
+        pass
+
     header = codecs.open(args.dest, "w", "utf-8-sig")
     header.write(result)
     header.close()
@@ -306,6 +318,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="export google doc to xml.  https://developers.google.com/sheets/api/quickstart/python")
     parser.add_argument("-s", "--src", help="source spreadsheet ID", required=True)
     parser.add_argument("-d", "--dest", help="destination file")
+#   parser.add_argument("-t", "--timestamp", help="adds timestamp from internet", action="store_true", default=False)
     parser.add_argument("-c", "--credentials", help="credentials json file", default="credentials.json")
 
     parser.add_argument("--preset", help="compile time preset", required=False, default="")
@@ -315,9 +328,12 @@ if __name__ == '__main__':
     if not args.dest:
         args.dest = args.src + ".xml"
 
+
+    """
     try:
         os.remove(args.dest)
     except:
         pass
+        """
 
     main(args)
