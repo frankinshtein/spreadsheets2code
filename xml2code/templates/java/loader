@@ -1,4 +1,4 @@
-package {{lang.package}};
+package {{lang.args.package}};
 
 /*
  file was automatically generated
@@ -18,6 +18,8 @@ import java.io.InputStream;
 
 public class {{loader}}
 {
+    public Long timestamp;
+
     public {{loader}}(InputStream stream, String preset){
 
         try {
@@ -25,6 +27,8 @@ public class {{loader}}
             DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
             Document document = documentBuilder.parse(stream);
             Element root = document.getDocumentElement();
+
+
 
 
             {% for cls in classes_with_id %}
@@ -38,7 +42,7 @@ public class {{loader}}
                     if (child.getNodeType() == Node.ELEMENT_NODE) {
 
                         {{cls.nice_name}} item = new {{cls.nice_name}}();
-                        item.id = utilParse_String(child, "id");
+                        item.id = utilParse_String(child, "id", preset);
                         itemsMap.put(item.id.toLowerCase(), item);
                     }
                     child = child.getNextSibling();
@@ -59,7 +63,7 @@ public class {{loader}}
                     if (child.getNodeType() == Node.ELEMENT_NODE) {
 
                         {% if cls.has_id %}
-                        {{cls.nice_name}} item = {{cls.nice_name}}.get(utilParse_String(child, "id"));
+                        {{cls.nice_name}} item = {{cls.nice_name}}.get(utilParse_String(child, "id", preset));
                         {% else %}
                         {{cls.nice_name}} item = new {{cls.nice_name}}();
                         {% endif %}
@@ -87,7 +91,7 @@ public class {{loader}}
     {
         if (preset != null)
         {
-            String key = key + "#" + preset;
+            String key = name + "#" + preset;
             String value = node.getAttributes().getNamedItem(key).getNodeValue();
             if (value != null)
                 return value;
@@ -126,7 +130,7 @@ public class {{loader}}
         }
     }
 
-    public static <T> T utilGetItem(Map<String, T> itemsMap, String name, String preset)
+    public static <T> T utilGetItem(Map<String, T> itemsMap, String name)
     {
         name = name.toLowerCase();
         return itemsMap.getOrDefault(name, null);

@@ -318,7 +318,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="export google doc to xml.  https://developers.google.com/sheets/api/quickstart/python")
     parser.add_argument("-s", "--src", help="source spreadsheet ID", required=True)
     parser.add_argument("-d", "--dest", help="destination file")
-#   parser.add_argument("-t", "--timestamp", help="adds timestamp from internet", action="store_true", default=False)
+#   parser.add_argument("-t", "--timestamp", help="adds timestamp from internet using ntplib", action="store_true", default=False)
     parser.add_argument("-c", "--credentials", help="credentials json file", default="credentials.json")
 
     parser.add_argument("--preset", help="compile time preset", required=False, default="")

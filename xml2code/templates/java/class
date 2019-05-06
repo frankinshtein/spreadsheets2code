@@ -1,4 +1,4 @@
-package {{lang.package}};
+package {{lang.args.package}};
 
 /*
  file was automatically generated
@@ -51,7 +51,7 @@ public class {{cls.nice_name}}
     public void init(Node node, int index, String preset){
 		{% for field in cls.fields %}
 		{% if field.type.custom %}
-		this.{{field.nice_name}} =  {{field.type.nice_name}}.get({{loader}}.utilParse_String(node, "{{field.name}}"), preset);
+		this.{{field.nice_name}} =  {{field.type.nice_name}}.get({{loader}}.utilParse_String(node, "{{field.name}}", preset));
 		{% elif field.named_list and field.array %}
 		this.{{field.nice_name}} = {{loader}}.utilParse_NamedList< List<{{field.type.name}}> >(node, "{{field.name}}", preset);
 		{% elif field.named_list %}
