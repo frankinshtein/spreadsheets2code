@@ -8,18 +8,19 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
-
+import java.io.ByteArrayInputStream;
 import java.util.*;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
-import java.io.InputStream;
 
 public class {{loader}}
 {
     public String preset;
     public Long timestamp;
+    public byte[] data;
+
 
     {% for cls in classes %}
     public ArrayList<{{cls.nice_name}}> list{{cls.nice_name}} = new ArrayList<>();
@@ -32,11 +33,14 @@ public class {{loader}}
     public {{loader}}(){
     }
 
-    public boolean load(InputStream stream, String preset){
+    public boolean load(byte[] data, String preset){
+        this.data = data;
+        this.preset = preset;
+
         try {
             DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
-            Document document = documentBuilder.parse(stream);
+            Document document = documentBuilder.parse(new ByteArrayInputStream(data));
             Element root = document.getDocumentElement();
 
 
@@ -90,12 +94,16 @@ public class {{loader}}
                 }
             }
             {% endfor %}
+
+            return true;
         } catch (ParserConfigurationException ex)
         {}
         catch (SAXException ex)
         {}
         catch (IOException ex)
         {}
+
+        return false;
     }
 
 
