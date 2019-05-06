@@ -18,10 +18,21 @@ import java.io.InputStream;
 
 public class {{loader}}
 {
+    public String preset;
     public Long timestamp;
 
-    public {{loader}}(InputStream stream, String preset){
+    {% for cls in classes %}
+    public ArrayList<{{cls.nice_name}}> list{{cls.nice_name}} = new ArrayList<>();
+    {% if cls.has_id %}
+    public Map<String, {{cls.nice_name}}> map{{cls.nice_name}} = new HashMap<>();
+    {% else %}
+    {% endif %}
+    {% endfor %}
 
+    public {{loader}}(){
+    }
+
+    public boolean load(InputStream stream, String preset){
         try {
             DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
@@ -30,13 +41,17 @@ public class {{loader}}
 
 
 
+            timestamp = Long.parseLong(root.getAttribute("timestamp"));
+
 
             {% for cls in classes_with_id %}
             /////////////load - {{cls.nice_name}}
             {
                 Node child = root.getElementsByTagName("{{cls.name}}").item(0).getFirstChild();
 
-                Map<String, {{cls.nice_name}}> itemsMap = new HashMap<>();
+                Map<String, {{cls.nice_name}}> itemsMap = map{{cls.nice_name}};
+                itemsMap.clear();
+
                 while(child != null)
                 {
                     if (child.getNodeType() == Node.ELEMENT_NODE) {
@@ -47,8 +62,6 @@ public class {{loader}}
                     }
                     child = child.getNextSibling();
                 }
-
-                {{cls.nice_name}}.itemsMap = itemsMap;
             }
             {% endfor %}
 
@@ -56,26 +69,25 @@ public class {{loader}}
             /////////////load - {{cls.nice_name}}
             {
                 Node child = root.getElementsByTagName("{{cls.name}}").item(0).getFirstChild();
-                ArrayList<{{cls.nice_name}}> items = new ArrayList<>();
-                Map<String, {{cls.nice_name}}> itemsMap = new HashMap<>();
+                ArrayList<{{cls.nice_name}}> items = list{{cls.nice_name}};
+                items.clear();
+
                 while(child != null)
                 {
                     if (child.getNodeType() == Node.ELEMENT_NODE) {
 
                         {% if cls.has_id %}
-                        {{cls.nice_name}} item = {{cls.nice_name}}.get(utilParse_String(child, "id", preset));
+                        {{cls.nice_name}} item = utilGetItem(map{{cls.nice_name}}, utilParse_String(child, "id", preset));
                         {% else %}
                         {{cls.nice_name}} item = new {{cls.nice_name}}();
                         {% endif %}
 
-                        item.init(child, items.size(), preset);
+                        item.init(child, items.size(), this);
 
                         items.add(item);
                     }
                     child = child.getNextSibling();
                 }
-
-                {{cls.nice_name}}.items = items;
             }
             {% endfor %}
         } catch (ParserConfigurationException ex)
@@ -84,6 +96,17 @@ public class {{loader}}
         {}
         catch (IOException ex)
         {}
+    }
+
+
+    public void assignStaticInstances(){
+        {% for cls in classes %}
+        {{cls.nice_name}}.items = list{{cls.nice_name}};
+        {% if cls.has_id %}
+        {{cls.nice_name}}.itemsMap = map{{cls.nice_name}};
+        {% else %}
+        {% endif %}
+        {% endfor %}
     }
 
 
@@ -98,6 +121,16 @@ public class {{loader}}
         }
         String value = node.getAttributes().getNamedItem(name).getNodeValue();
         return value;
+    }
+
+    public static long utilParse_long(Node node, String name, String preset)
+    {
+        String value = utilParse_String(node, name, preset);
+        try {
+            return Long.parseLong(value);
+        } catch(NumberFormatException ex) {
+            return 0;
+        }
     }
 
     public static int utilParse_int(Node node, String name, String preset)
