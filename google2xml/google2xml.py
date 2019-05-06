@@ -276,7 +276,7 @@ def main(args):
     values = sheet.values()
 
 
-    result = ""
+    result = """<?xml version="1.0" encoding="UTF-8" ?>"""
     result += "<data timestamp=\"{}\"\n\tpreset=\"{}\" >\n".format(int(time.time()), args.preset)
 
     for sheet_item in sheets:
@@ -295,8 +295,12 @@ def main(args):
     except OSError:
         pass
 
+    enc = None
+    if args.bom:
+        enc = "utf-8-sig"
+
     try:
-        with codecs.open(args.dest, "r", "utf-8-sig") as old:
+        with codecs.open(args.dest, "r", enc) as old:
             data_old = old.read().split("\n", 1)[1]
             data_new = result.split("\n", 1)[1]
             if data_old == data_new:
@@ -306,7 +310,7 @@ def main(args):
     except IOError:
         pass
 
-    header = codecs.open(args.dest, "w", "utf-8-sig")
+    header = codecs.open(args.dest, "w", enc)
     header.write(result)
     header.close()
     print("file saved: " + args.dest)
@@ -318,6 +322,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="export google doc to xml.  https://developers.google.com/sheets/api/quickstart/python")
     parser.add_argument("-s", "--src", help="source spreadsheet ID", required=True)
     parser.add_argument("-d", "--dest", help="destination file")
+    parser.add_argument("-b", "--bom", help="add utf8 bom symbol", action="store_true", default=False)
 #   parser.add_argument("-t", "--timestamp", help="adds timestamp from internet using ntplib", action="store_true", default=False)
     parser.add_argument("-c", "--credentials", help="credentials json file", default="credentials.json")
 
