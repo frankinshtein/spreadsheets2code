@@ -9,10 +9,16 @@ from xml.sax.saxutils import quoteattr
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+import sys
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
+PY3 = sys.version_info[0] == 3
+if PY3:
+    string_type = str
+else:
+    string_type = basestring
 
 def fix_field(name):
     res = ""
@@ -69,7 +75,10 @@ class matrix:
             x, y = y, x
 
         try:
-            return str(self.cells[y][x])
+            val = self.cells[y][x]
+            if isinstance(val, string_type):
+                return val
+            return str(val)
         except IndexError:
             return ""
 
@@ -157,7 +166,9 @@ def export_table(args, mat, sheet_name):
                         
             """
 
-            result += " {}={}".format(fix_field(field), quoteattr(value))
+            q = quoteattr(value)
+            z = u" {}={}".format(fix_field(field), q)
+            result += z
 
         result += '/>\n'
 
@@ -295,24 +306,23 @@ def main(args):
     except OSError:
         pass
 
-    enc = None
-    if args.bom:
-        enc = "utf-8-sig"
+    #enc = None
+    #if args.bom:
+    #    enc = "utf-8-sig"
 
     try:
-        with codecs.open(args.dest, "r", enc) as old:
-            data_old = old.read().split("\n", 1)[1]
+        with open(args.dest, "rb") as old:
+            data_old = old.read().decode("utf-8").split("\n", 1)[1]
             data_new = result.split("\n", 1)[1]
             if data_old == data_new:
                 print("there is not any changes in document: " + args.dest)
                 return
-
-    except IOError:
+    except Exception:
         pass
 
-    header = codecs.open(args.dest, "w", enc)
-    header.write(result)
-    header.close()
+
+    with open(args.dest, "wb") as fh:
+        fh.write(result.encode("utf-8"))
     print("file saved: " + args.dest)
 
 
@@ -322,7 +332,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="export google doc to xml.  https://developers.google.com/sheets/api/quickstart/python")
     parser.add_argument("-s", "--src", help="source spreadsheet ID", required=True)
     parser.add_argument("-d", "--dest", help="destination file")
-    parser.add_argument("-b", "--bom", help="add utf8 bom symbol", action="store_true", default=False)
+    #parser.add_argument("-b", "--bom", help="add utf8 bom symbol", action="store_true", default=False)
 #   parser.add_argument("-t", "--timestamp", help="adds timestamp from internet using ntplib", action="store_true", default=False)
     parser.add_argument("-c", "--credentials", help="credentials json file", default="credentials.json")
 
