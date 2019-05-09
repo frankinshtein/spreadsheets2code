@@ -18,11 +18,11 @@ public class {{cls.nice_name}}
     {% endif %}
     {% for field in cls.fields %}
         {% if field.array and field.named_list %}
-    public List<Tuple<String, List<{{ field.type.nice_name }}>>> {{ field.nice_name}};
+    public List<Map.Entry<String, List<{{ field.type.object_name }}>>> {{ field.nice_name}};
         {% elif field.array %}
-    public List<{{ field.type.nice_name }}> {{ field.nice_name}};
+    public List<{{ field.type.object_name }}> {{ field.nice_name}};
         {% elif field.named_list %}
-    public List<Tuple<String, {{ field.type.nice_name }}>> {{ field.nice_name}};
+    public List<Map.Entry<String, {{ field.type.object_name }}>> {{ field.nice_name}};
         {% else %}
     public {{ field.type.nice_name }} {{ field.nice_name}};
         {% endif %}
@@ -53,9 +53,11 @@ public class {{cls.nice_name}}
 		{% if field.type.custom %}
 		this.{{field.nice_name}} =  {{loader}}.utilGetItem(loader.map{{field.type.nice_name}}, {{loader}}.utilParse_String(node, "{{field.name}}", loader.preset));
 		{% elif field.named_list and field.array %}
-		this.{{field.nice_name}} = {{loader}}.utilParse_NamedList< List<{{field.type.name}}> >(node, "{{field.name}}", loader.preset);
+		this.{{field.nice_name}} = {{loader}}.utilParse_NamedList(node, "{{field.name}}", loader.preset);
 		{% elif field.named_list %}
-		this.{{field.nice_name}} = {{loader}}.utilParse_NamedList<{{field.type.name}}>(node, "{{field.name}}", loader.preset);
+		this.{{field.nice_name}} = {{loader}}.utilParse_NamedList(node, "{{field.name}}", loader.preset);
+		{% elif field.array %}
+		this.{{field.nice_name}} = {{loader}}.utilParse_List(node, "{{field.name}}", loader.preset);
 		{% else  %}
 		this.{{field.nice_name}} = {{loader}}.utilParse_{{field.type.name}}(node, "{{field.name}}", loader.preset);
     	{% endif %}

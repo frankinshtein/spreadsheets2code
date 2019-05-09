@@ -4,6 +4,7 @@ package {{lang.args.package}};
  file was automatically generated
 */
 
+import com.google.protobuf.MapEntry;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -117,6 +118,13 @@ public class {{loader}}
         {% endfor %}
     }
 
+    public static <T> List< Map.Entry<String, T> > utilParse_NamedList(Node node, String name, String preset){
+        return null;
+    }
+
+    public static <T> List<T> utilParse_List(Map<String, T> itemsMap, Node node, String name, String preset){
+        return null;
+    }
 
     public static String utilParse_String(Node node, String name, String preset)
     {

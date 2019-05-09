@@ -10,6 +10,31 @@ import sys
 
 
 
+
+class Field:
+    def __init__(self, name, nice_name, type, array, named_list):
+        self.type = type
+        self.name = name
+        self.nice_name = nice_name
+        self.array = array
+        self.named_list = named_list
+
+class Class:
+    def __init__(self, name, nice_name = None, custom = False):
+        self.fields = []
+        self.name = name
+        self.has_id = False
+        self.custom = custom
+        if nice_name:
+            self.nice_name = nice_name
+        else:
+            self.nice_name = name
+
+    def has_field(self, name):
+        names = list(map(lambda field: field.name, self.fields))
+        return name in names
+
+
 def first_rest_split(st):
     items = st.split('_')
     first = items[0]
@@ -23,10 +48,12 @@ class Language:
         self.extension = ""
         self.prefix = args.prefix
         self.args = args
+        self.Class = Class
 
 
     def add_class(self, name, cls):
         self.classes[name] = cls
+        return cls
 
     def get_nice_class_name(self, column):
         first, rest = first_rest_split(column)
@@ -42,7 +69,7 @@ class Language:
         if name in self.classes:
             return self.classes[name]
 
-        return Class(name, self.get_nice_class_name(name), True)
+        return self.Class(name, self.get_nice_class_name(name), True)
 
     def create_field(self, name, tpstr):
 
@@ -114,29 +141,6 @@ def save_if_changed(name, content):
 
 
 
-class Field:
-    def __init__(self, name, nice_name, type, array, named_list):
-        self.type = type
-        self.name = name
-        self.nice_name = nice_name
-        self.array = array
-        self.named_list = named_list
-
-class Class:
-    def __init__(self, name, nice_name = None, custom = False):
-        self.fields = []
-        self.name = name
-        self.has_id = False
-        self.custom = custom
-        if nice_name:
-            self.nice_name = nice_name
-        else:
-            self.nice_name = name
-
-    def has_field(self, name):
-        names = list(map(lambda field: field.name, self.fields))
-        return name in names
-
 def gen(args, xml_res_file, dest_folder):
 
     sys.path.append(os.path.join(os.path.dirname(__file__), "templates"))
@@ -168,7 +172,7 @@ def gen(args, xml_res_file, dest_folder):
             continue
 
         class_name = class_node.nodeName
-        cls = Class(class_name, lang.get_nice_class_name(class_name))
+        cls = lang.Class(class_name, lang.get_nice_class_name(class_name))
 
         classes.append(cls)
 

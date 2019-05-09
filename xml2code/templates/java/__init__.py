@@ -1,12 +1,23 @@
 import xml2code
 
+class JavaClass(xml2code.Class):
+    def __init__(self, *args, **kwargs):
+        xml2code.Class.__init__(self, *args, **kwargs)
+        self.object_name = self.name
+
+    def set_object_name(self, name):
+        self.object_name = name
+        return self
+
+
 
 def create(args):
     config = xml2code.Language(args)
-    config.add_class("string", xml2code.Class("String"))
-    config.add_class("int", xml2code.Class("int"))
-    config.add_class("float", xml2code.Class("float"))
-    config.add_class("double", xml2code.Class("double"))
+    config.Class = JavaClass
+    config.add_class("string", JavaClass("String"))
+    config.add_class("int", JavaClass("int").set_object_name("Integer"))
+    config.add_class("float", JavaClass("float").set_object_name("Float"))
+    config.add_class("double", JavaClass("double").set_object_name("Double"))
     config.extension = ".java"
 
     return config
