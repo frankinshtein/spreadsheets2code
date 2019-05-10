@@ -3,7 +3,7 @@ import xml2code
 class JavaClass(xml2code.Class):
     def __init__(self, *args, **kwargs):
         xml2code.Class.__init__(self, *args, **kwargs)
-        self.object_name = self.name
+        self.object_name = self.nice_name
 
     def set_object_name(self, name):
         self.object_name = name

@@ -50,17 +50,15 @@ public class {{cls.nice_name}}
 
     public void init(Node node, int index, GLoader loader){
 		{% for field in cls.fields %}
-		{% if field.type.custom %}
-		this.{{field.nice_name}} =  {{loader}}.utilGetItem(loader.map{{field.type.nice_name}}, {{loader}}.utilParse_String(node, "{{field.name}}", loader.preset));
-		{% elif field.named_list and field.array %}
-		this.{{field.nice_name}} = {{loader}}.utilParse_NamedList(node, "{{field.name}}", loader.preset);
-		{% elif field.named_list %}
-		this.{{field.nice_name}} = {{loader}}.utilParse_NamedList(node, "{{field.name}}", loader.preset);
-		{% elif field.array %}
-		this.{{field.nice_name}} = {{loader}}.utilParse_List(node, "{{field.name}}", loader.preset);
-		{% else  %}
-		this.{{field.nice_name}} = {{loader}}.utilParse_{{field.type.name}}(node, "{{field.name}}", loader.preset);
-    	{% endif %}
+		{% if field.array and field.named_list %}
+        this.{{field.nice_name}} = {{loader}}.utilParse_NamedList(node, "{{field.name}}", loader.preset, loader.fnString2{{field.type.nice_name}});
+        {% elif field.array %}
+        this.{{field.nice_name}} = {{loader}}.utilParse_List(node, "{{field.name}}", loader.preset, loader.fnString2{{field.type.nice_name}});
+        {% elif field.named_list %}
+        this.{{field.nice_name}} = {{loader}}.utilParse_Named(node, "{{field.name}}", loader.preset, loader.fnString2{{field.type.nice_name}});
+        {% else %}
+		this.{{field.nice_name}} = {{loader}}.utilParse_Single(node, "{{field.name}}", loader.preset, loader.fnString2{{field.type.nice_name}});
+		{% endif %}
     	{% endfor %}
     	indexInArray = index;
     }

@@ -187,8 +187,8 @@ def gen(args, xml_res_file, dest_folder):
         buffer.write(env.get_template("class").render(**template_args))
         save_if_changed(dest_folder + cls.nice_name + lang.extension, buffer.getvalue())
 
-    classes_with_id = filter(lambda v: v.has_id, classes)
-    classes_without_id = filter(lambda v: not v.has_id, classes)
+    classes_with_id = list(filter(lambda v: v.has_id, classes))
+    classes_without_id = list(filter(lambda v: not v.has_id, classes))
 
     template_args = {"classes": classes, "classes_with_id": classes_with_id,
                      "classes_without_id": classes_without_id,

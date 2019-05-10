@@ -15,6 +15,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.util.function.Function;
 
 public class {{loader}}
 {
@@ -31,7 +32,22 @@ public class {{loader}}
     {% endif %}
     {% endfor %}
 
+    {% for cls in classes_with_id %}
+    public Function<String, {{cls.nice_name}}> fnString2{{cls.nice_name}};
+    {% endfor %}
+
+    public Function<String, Integer> fnString2int = str->Integer.parseInt(str);
+    public Function<String, Float> fnString2float = str->Float.parseFloat(str);
+    public Function<String, Long> fnString2long = str->Long.parseLong(str);
+    public Function<String, String> fnString2String = str->str;
+
+
+
+
     public {{loader}}(){
+        {% for cls in classes_with_id %}
+        fnString2{{cls.nice_name}} = str->utilGetItem(map{{cls.nice_name}}, str);
+        {% endfor %}
     }
 
     public boolean load(byte[] data, String preset){
@@ -69,6 +85,8 @@ public class {{loader}}
                 }
             }
             {% endfor %}
+
+            ///init all classes
 
             {% for cls in classes %}
             /////////////load - {{cls.nice_name}}
@@ -118,13 +136,27 @@ public class {{loader}}
         {% endfor %}
     }
 
-    public static <T> List< Map.Entry<String, T> > utilParse_NamedList(Node node, String name, String preset){
+
+
+    public static <T> T utilParse_Single(Node node, String name, String preset, Function<String, T> fn)
+    {
+        String st = utilParse_String(node, name, preset);
+        return fn.apply(st);
+    }
+
+    public static <T> List<T> utilParse_List(Node node, String name, String preset, Function<String, T> fn)
+    {
         return null;
     }
 
-    public static <T> List<T> utilParse_List(Map<String, T> itemsMap, Node node, String name, String preset){
+    public static <T> List< Map.Entry<String, T> > utilParse_Named(Node node, String name, String preset, Function<String, T> fn){
         return null;
     }
+
+    public static <T> List< Map.Entry<String, List<T> > > utilParse_NamedList(Node node, String name, String preset, Function<String, T> fn){
+        return null;
+    }
+
 
     public static String utilParse_String(Node node, String name, String preset)
     {
@@ -137,46 +169,6 @@ public class {{loader}}
         }
         String value = node.getAttributes().getNamedItem(name).getNodeValue();
         return value;
-    }
-
-    public static long utilParse_long(Node node, String name, String preset)
-    {
-        String value = utilParse_String(node, name, preset);
-        try {
-            return Long.parseLong(value);
-        } catch(NumberFormatException ex) {
-            return 0;
-        }
-    }
-
-    public static int utilParse_int(Node node, String name, String preset)
-    {
-        String value = utilParse_String(node, name, preset);
-        try {
-            return Integer.parseInt(value);
-        } catch(NumberFormatException ex) {
-            return 0;
-        }
-    }
-
-    public static double utilParse_double(Node node, String name, String preset)
-    {
-        String value = utilParse_String(node, name, preset);
-        try {
-            return Double.parseDouble(value);
-        } catch(NumberFormatException ex) {
-            return 0;
-        }
-    }
-
-    public static float utilParse_float(Node node, String name, String preset)
-    {
-        String value = utilParse_String(node, name, preset);
-        try {
-            return Float.parseFloat(value);
-        } catch(NumberFormatException ex) {
-            return 0;
-        }
     }
 
     public static <T> T utilGetItem(Map<String, T> itemsMap, String name)
