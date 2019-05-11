@@ -16,6 +16,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.w3c.dom.NamedNodeMap;
 
 public class {{loader}}
 {
@@ -36,10 +38,28 @@ public class {{loader}}
     public Function<String, {{cls.nice_name}}> fnString2{{cls.nice_name}};
     {% endfor %}
 
-    public Function<String, Integer> fnString2int = str->Integer.parseInt(str);
-    public Function<String, Float> fnString2float = str->Float.parseFloat(str);
-    public Function<String, Long> fnString2long = str->Long.parseLong(str);
-    public Function<String, String> fnString2String = str->str;
+    public static Function<String, Integer> fnString2int = str->{
+        try {
+            return Integer.parseInt(str);
+        } catch (NumberFormatException ex){}
+        return 0;
+    };
+
+    public static Function<String, Float> fnString2float = str->{
+        try {
+            return Float.parseFloat(str);
+        } catch (NumberFormatException ex){}
+        return 0.0f;
+    };
+
+    public static Function<String, Long> fnString2long  = str->{
+        try {
+            return Long.parseLong(str);
+        } catch (NumberFormatException ex){}
+        return 0L;
+    };
+
+    public static Function<String, String> fnString2String = str->str;
 
 
 
@@ -138,27 +158,50 @@ public class {{loader}}
 
 
 
+    private static <T> List<T> utilParse_String2List(String st, Function<String, T> fn)
+    {
+        return Arrays.stream(st.split(",")).map(String::trim).map(fn).collect(Collectors.toList());
+    }
+
+
     public static <T> T utilParse_Single(Node node, String name, String preset, Function<String, T> fn)
     {
         String st = utilParse_String(node, name, preset);
         return fn.apply(st);
     }
 
-    public static <T> List<T> utilParse_List(Node node, String name, String preset, Function<String, T> fn)
+    static <T> List<T> utilParse_List(Node node, String name, String preset, Function<String, T> fn)
     {
-        return null;
+        return utilParse_String2List(utilParse_String(node, name, preset), fn);
     }
 
-    public static <T> List< Map.Entry<String, T> > utilParse_Named(Node node, String name, String preset, Function<String, T> fn){
-        return null;
+    static <T> Map<String, T> utilParse_Named(Node node, String name, String preset, Function<String, T> fn){
+
+        NamedNodeMap attrs = node.getAttributes();
+        String pref = name + ".";
+
+        Map<String, T> items = new HashMap<>();
+        for (int i = 0; i < attrs.getLength(); ++i)
+        {
+            Node attrNode = attrs.item(i);
+            String attrName = attrNode.getNodeName();
+            if (attrName.startsWith(pref)){
+                String nam = attrName.substring(pref.length());
+                String value = attrNode.getNodeValue();
+
+                items.put(nam, fn.apply(value));
+            }
+        }
+
+        return items;
     }
 
-    public static <T> List< Map.Entry<String, List<T> > > utilParse_NamedList(Node node, String name, String preset, Function<String, T> fn){
-        return null;
+    static <T> Map<String, List<T>> utilParse_NamedList(Node node, String name, String preset, Function<String, T> fn){
+        Map<String, String> rs = utilParse_Named(node, name, preset, fnString2String);
+        return rs.entrySet().stream().collect(Collectors.toMap(entry->entry.getKey(), entry->utilParse_String2List(entry.getValue(), fn)));
     }
 
-
-    public static String utilParse_String(Node node, String name, String preset)
+    private static String utilParse_String(Node node, String name, String preset)
     {
         if (preset != null)
         {

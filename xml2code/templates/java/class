@@ -18,11 +18,11 @@ public class {{cls.nice_name}}
     {% endif %}
     {% for field in cls.fields %}
         {% if field.array and field.named_list %}
-    public List<Map.Entry<String, List<{{ field.type.object_name }}>>> {{ field.nice_name}};
+    public Map<String, List<{{ field.type.object_name }}>> {{ field.nice_name}};
         {% elif field.array %}
     public List<{{ field.type.object_name }}> {{ field.nice_name}};
         {% elif field.named_list %}
-    public List<Map.Entry<String, {{ field.type.object_name }}>> {{ field.nice_name}};
+    public Map<String, {{ field.type.object_name }}> {{ field.nice_name}};
         {% else %}
     public {{ field.type.nice_name }} {{ field.nice_name}};
         {% endif %}
