@@ -62,6 +62,7 @@ class Language:
 
     def get_field_name(self, column):
         first, rest = first_rest_split(column)
+        first = first.casefold()
         ret = first + ''.join(word.capitalize() for word in rest)
         return ret
 
