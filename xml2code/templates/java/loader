@@ -80,10 +80,7 @@ public class {{loader}}
             Document document = documentBuilder.parse(new ByteArrayInputStream(data));
             Element root = document.getDocumentElement();
 
-
-
             timestamp = Long.parseLong(root.getAttribute("timestamp"));
-
 
             {% for cls in classes_with_id %}
             /////////////load - {{cls.nice_name}}
@@ -96,7 +93,6 @@ public class {{loader}}
                 while(child != null)
                 {
                     if (child.getNodeType() == Node.ELEMENT_NODE) {
-
                         {{cls.nice_name}} item = new {{cls.nice_name}}();
                         item.id = utilParse_String(child, "id", preset);
                         itemsMap.put(item.id.toLowerCase(), item);
@@ -118,15 +114,12 @@ public class {{loader}}
                 while(child != null)
                 {
                     if (child.getNodeType() == Node.ELEMENT_NODE) {
-
                         {% if cls.has_id %}
                         {{cls.nice_name}} item = utilGetItem(map{{cls.nice_name}}, utilParse_String(child, "id", preset));
                         {% else %}
                         {{cls.nice_name}} item = new {{cls.nice_name}}();
                         {% endif %}
-
                         item.init(child, items.size(), this);
-
                         items.add(item);
                     }
                     child = child.getNextSibling();
@@ -180,17 +173,29 @@ public class {{loader}}
         NamedNodeMap attrs = node.getAttributes();
         String pref = name + ".";
 
+
+        String suffix = "#" + preset;
+
         Map<String, T> items = new HashMap<>();
         for (int i = 0; i < attrs.getLength(); ++i)
         {
             Node attrNode = attrs.item(i);
             String attrName = attrNode.getNodeName();
-            if (attrName.startsWith(pref)){
-                String nam = attrName.substring(pref.length());
-                String value = attrNode.getNodeValue();
 
-                items.put(nam, fn.apply(value));
+            if (!attrName.startsWith(pref) || attrName.contains("#"))
+                continue;
+
+            String nam = attrName.substring(pref.length());
+            String value = attrNode.getNodeValue();
+
+            if (preset != null){
+                Node nodePreset = attrs.getNamedItem(attrName + suffix);
+                if (nodePreset != null)
+                    value = nodePreset.getNodeValue();
             }
+
+            items.put(nam, fn.apply(value));
+
         }
 
         return items;
