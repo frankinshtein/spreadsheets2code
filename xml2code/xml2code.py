@@ -22,6 +22,7 @@ class Field:
 class Class:
     def __init__(self, name, nice_name = None, custom = False):
         self.fields = []
+        self.fields_without_id = []
         self.name = name
         self.has_id = False
         self.custom = custom
@@ -123,6 +124,8 @@ class Language:
 
             if name == "id":
                 cls.has_id = True
+            else:
+                cls.fields_without_id.append(field)
 
 
 
