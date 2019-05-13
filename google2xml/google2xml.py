@@ -134,7 +134,11 @@ def export_table(args, mat, sheet_name):
             y += 1
             continue
 
+
         result += '\t\t<item'
+
+        if args.diff:
+            result += '\n'
 
         for x in range(mat.width):
 
@@ -167,10 +171,17 @@ def export_table(args, mat, sheet_name):
             """
 
             q = quoteattr(value)
-            z = u" {}={}".format(fix_field(field), q)
+            if args.diff:
+                z = u"\t\t\t{}={}\n".format(fix_field(field), q)
+            else:
+                z = u" {}={}".format(fix_field(field), q)
+
             result += z
 
-        result += '/>\n'
+        if args.diff:
+            result += '\t\t/>\n'
+        else:
+            result += '/>\n'
 
         y += 1
 
@@ -332,6 +343,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="export google doc to xml.  https://developers.google.com/sheets/api/quickstart/python")
     parser.add_argument("-s", "--src", help="source spreadsheet ID", required=True)
     parser.add_argument("-d", "--dest", help="destination file")
+    parser.add_argument("--diff", help="diff/merge friendly xml view", default=True)
     #parser.add_argument("-b", "--bom", help="add utf8 bom symbol", action="store_true", default=False)
 #   parser.add_argument("-t", "--timestamp", help="adds timestamp from internet using ntplib", action="store_true", default=False)
     parser.add_argument("-c", "--credentials", help="credentials json file", default="credentials.json")
