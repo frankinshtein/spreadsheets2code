@@ -89,7 +89,7 @@ class matrix:
         self.cells[y][x] = str(value)
 
 
-def export_table(args, mat, sheet_name):
+def export_table(args, mat, sheet_name, tables):
 
     print("  {}".format(sheet_name))
 
@@ -187,10 +187,10 @@ def export_table(args, mat, sheet_name):
 
     result += '\t</' + sheet_name + '>\n'
 
-    return result
+    tables[sheet_name.lower()] = result
 
 
-def export_sheet(args, sheet_name, values):
+def export_sheet(args, sheet_name, values, tables):
     """
     :type sheet_name: basestring
     """
@@ -199,7 +199,7 @@ def export_sheet(args, sheet_name, values):
 
     if sheet_name.startswith("*"):
         print("skipped {}".format(sheet_name))
-        return None
+        return
 
 
 
@@ -211,14 +211,14 @@ def export_sheet(args, sheet_name, values):
     page = response.get('values', [])
 
     if len(page) < 1:
-        return  None
-
-    result = ""
+        return
 
 
     mat = matrix()
     mat.init(page)
 
+
+    ret = False
 
     for y in range(mat.height):
         for x in range(mat.width):
@@ -258,14 +258,15 @@ def export_sheet(args, sheet_name, values):
                 sub.init_sub(mat, (x, y + 1), (sub_width, sub_height))
 
 
-                result += export_table(args, sub, name)
+                export_table(args, sub, name, tables)
+                ret = True
 
 
-    if result:
-        return result
+    if ret:
+        return
 
 
-    return export_table(args, mat, sheet_name)
+    export_table(args, mat, sheet_name, tables)
 
 
 def main(args):
@@ -301,12 +302,15 @@ def main(args):
     result = """<?xml version="1.0" encoding="UTF-8" ?>"""
     result += "<data timestamp=\"{}\"\n\tpreset=\"{}\" >\n".format(int(time.time()), args.preset)
 
+    tables = {}
     for sheet_item in sheets:
         name = sheet_item.get("properties", {}).get("title", "Sheet1")
-        rs = export_sheet(args, name, values)
-        if rs:
-            result += rs
+        export_sheet(args, name, values, tables)
 
+    sorted_tables = sorted(tables)
+    for table in sorted_tables:
+        val = tables[table]
+        result += val
     result += "</data>"
 
 
