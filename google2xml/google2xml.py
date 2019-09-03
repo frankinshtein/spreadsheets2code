@@ -205,7 +205,7 @@ def export_sheet(args, sheet_name, values, tables):
 
     print("tab '{}'".format(sheet_name))
 
-    response = values.get(spreadsheetId=args.src, range=sheet_name, valueRenderOption='UNFORMATTED_VALUE').execute()
+    response = values.get(spreadsheetId=args.src, range=sheet_name, valueRenderOption='UNFORMATTED_VALUE', dateTimeRenderOption='FORMATTED_STRING').execute()
 
 
     page = response.get('values', [])
