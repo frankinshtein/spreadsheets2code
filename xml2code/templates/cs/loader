@@ -1,0 +1,259 @@
+//package {{lang.args.package}};
+
+/*
+ file was automatically generated
+*/
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Xml;
+
+
+public class {{loader}}
+{
+    public string preset;
+    public long timestamp;
+    public byte[] data;
+
+
+    {% for cls in classes %}
+    public List<{{cls.nice_name}}> list{{cls.nice_name}} = new List<{{cls.nice_name}}>();
+    {% if cls.has_id %}
+    public Dictionary<String, {{cls.nice_name}}> map{{cls.nice_name}} = new Dictionary<String, {{cls.nice_name}}>();
+    {% else %}
+    {% endif %}
+    {% endfor %}
+
+    {% for cls in classes_with_id %}
+    public Func<String, {{cls.nice_name}}> fnString2{{cls.nice_name}};
+    {% endfor %}
+
+    public Func<String, int> fnString2int = (string str)=>{
+        return int.Parse(str);
+    };
+
+    public Func<String, float> fnString2float = (string str)=>{
+        return float.Parse(str);
+    };
+
+    public Func<String, long> fnString2long  = (string str)=>{
+        return long.Parse(str);
+    };
+
+    public Func<String, String> fnString2String = (string str)=>{
+        return str;
+    };
+
+
+
+    public {{loader}}(){
+        {% for cls in classes_with_id %}
+        fnString2{{cls.nice_name}} = str=> utilGetItem(map{{cls.nice_name}}, str);
+        {% endfor %}
+    }
+
+    public bool load(byte[] data, String preset){
+        this.data = data;
+        this.preset = preset;
+
+        try {
+            XmlDocument document = new XmlDocument();
+            document.Load(new MemoryStream(data));
+            XmlElement root = document.DocumentElement;
+
+            timestamp = long.Parse(root.GetAttribute("timestamp"));
+
+            {% for cls in classes_with_id %}
+            /////////////load - {{cls.nice_name}}
+            {
+                XmlNode child = root.GetElementsByTagName("{{cls.name}}").Item(0).FirstChild;
+
+                Dictionary<String, {{cls.nice_name}}> itemsMap = map{{cls.nice_name}};
+                itemsMap.Clear();
+
+                while(child != null)
+                {
+                    if (child.NodeType == XmlNodeType.Element) {
+                        {{cls.nice_name}} item = new {{cls.nice_name}}();
+                        item.id = utilParse_String_(child, "id", preset);
+                        itemsMap.Add(item.id.ToLower(), item);
+                        item.xmlNode = child;
+                    }
+                    child = child.NextSibling;
+                }
+            }
+            {% endfor %}
+
+            ///init all classes
+
+            {% for cls in classes %}
+            /////////////load - {{cls.nice_name}}
+            {
+                XmlNode child = root.GetElementsByTagName("{{cls.name}}").Item(0).FirstChild;
+                List<{{cls.nice_name}}> items = list{{cls.nice_name}};
+                items.Clear();
+
+                while(child != null)
+                {
+                    if (child.NodeType == XmlNodeType.Element) {
+
+                        XmlNode presetNode = null;
+
+                        {% if cls.has_id %}
+                        String id = utilParse_String_(child, "id", preset);
+                        {{cls.nice_name}} item = utilGetItem(map{{cls.nice_name}}, id);
+
+                        {{cls.nice_name}} presetItem = utilGetItem(map{{cls.nice_name}}, id + "#" + preset);
+                        if (presetItem != null)
+                            presetNode = presetItem.xmlNode;
+                        {% else %}
+                        {{cls.nice_name}} item = new {{cls.nice_name}}();
+                        item.xmlNode = child;
+                        {% endif %}
+                        item.init(child, presetNode, items.Count, this);
+                        items.Add(item);
+                    }
+                    child = child.NextSibling;
+                }
+
+                /*
+                {% if cls.has_id %}
+                for ({{cls.nice_name}} presetItem:items){
+                    String end =  "#"+preset;
+                    if (presetItem.id.endsWith(end)){
+                        {{cls.nice_name}} mainItem = utilGetItem(map{{cls.nice_name}}, presetItem.id.substring(0, presetItem.id.length() - end.length()));
+
+                        {% for field in cls.fields %}
+                        if (presetItem.has_{{field.nice_name}})
+                            mainItem.{{field.nice_name}} = presetItem.{{field.nice_name}};
+                        {% endfor %}
+                    }
+                }
+                {% endif %}
+                */
+            }
+            {% endfor %}
+
+            return true;
+        } catch (Exception ex)
+        {}
+        /*
+        catch (SAXException ex)
+        {}
+        catch (IOException ex)
+        {}*/
+
+        return false;
+    }
+
+
+    public void assignStaticInstances(){
+        {% for cls in classes %}
+        {{cls.nice_name}}.items = list{{cls.nice_name}};
+        {% if cls.has_id %}
+        {{cls.nice_name}}.itemsMap = map{{cls.nice_name}};
+        {% else %}
+        {% endif %}
+        {% endfor %}
+    }
+
+
+
+
+    private static List<T> utilParse_String2List<T>(String st, Func<String, T> fn) {
+        var items = st.Split(',');
+        var ls = new List<T>();
+        for (int i = 0; i < items.Length; ++i) {
+            var item = items[i].Trim();
+            var res = fn(item);
+            ls.Add(res);
+        }
+        return ls;
+    }
+
+    public static T utilParse_Single<T>(XmlNode node, String name, String preset, XmlNode presetNode, Func<String, T> fn)
+    {
+        String st = utilParse_String(node, name, preset, presetNode);
+        return fn(st);
+    }
+
+    static List<T> utilParse_List<T>(XmlNode node, String name, String preset, XmlNode presetNode, Func<String, T> fn)
+    {
+        return utilParse_String2List(utilParse_String(node, name, preset, presetNode), fn);
+    }
+
+    static Dictionary<String, T> utilParse_Named<T>(XmlNode node, String name, String preset, XmlNode presetNode, Func<String, T> fn) {
+
+        var attrs = node.Attributes;
+        String pref = name + ".";
+
+
+        String suffix = "#" + preset;
+
+        Dictionary<String, T> items = new Dictionary<String, T>();
+        for (int i = 0; i < attrs.Count; ++i)
+        {
+            XmlNode attrNode = attrs.Item(i);
+            String attrName = attrNode.Name;
+
+            if (!attrName.StartsWith(pref) || attrName.Contains("#"))
+                continue;
+
+            String nam = attrName.Substring(pref.Length);
+            String value = attrNode.Value;
+
+            if (preset != null){
+                XmlNode nodePreset = attrs.GetNamedItem(attrName + suffix);
+                if (nodePreset != null)
+                    value = nodePreset.Value;
+            }
+
+            items.Add(nam, fn(value));
+
+        }
+
+        return items;
+    }
+/*
+    static Map<String, List<T>> utilParse_NamedList(XmlNode node, String name, String preset, XmlNode presetNode, Func<String, T> fn){
+        Map<String, String> rs = utilParse_Named(node, name, preset, presetNode, fnString2String);
+        return rs.entrySet().stream().collect(Collectors.toMap(entry->entry.getKey(), entry->utilParse_String2List(entry.getValue(), fn)));
+    }
+*/
+    private static String utilParse_String(XmlNode node, String name, String preset, XmlNode presetNode)
+    {
+        String ret = null;
+        if (presetNode != null)
+            ret = utilParse_String_(presetNode, name, preset);
+        if (ret != null && ret.Length > 0)
+            return ret;
+        return utilParse_String_(node, name, preset);
+    }
+
+    private static String utilParse_String_(XmlNode node, String name, String preset)
+    {
+        if (preset != null)
+        {
+            String key = name + "#" + preset;
+            XmlNode attr = node.Attributes.GetNamedItem(key);
+            if (attr != null){
+                return attr.Value;
+            }
+
+        }
+        string value = node.Attributes.GetNamedItem(name).Value;
+        return value;
+    }
+
+
+
+    public static T utilGetItem<T>(Dictionary<String, T> itemsMap, String name) {
+        name = name.ToLower();
+        T res;
+        if (itemsMap.TryGetValue(name, out res))
+            return res;
+        return default;
+    }
+}

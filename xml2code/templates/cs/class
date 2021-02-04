@@ -1,0 +1,78 @@
+//package {{lang.args.package}};
+
+/*
+ file was automatically generated
+*/
+
+using System;
+using System.Collections.Generic;
+using System.Xml;
+
+public class {{cls.nice_name}}
+{
+	public static List<{{cls.nice_name}}> items = new List<{{cls.nice_name}}>();
+
+	{% if cls.has_id %}
+	public static Dictionary<String, {{cls.nice_name}}> itemsMap = new Dictionary<String, {{cls.nice_name}}>();
+    {% endif %}
+    {% for field in cls.fields %}
+        {% if field.array and field.named_list %}
+    public Map<String, List<{{ field.type.object_name }}>> {{ field.nice_name}};
+        {% elif field.array %}
+    public List<{{ field.type.object_name }}> {{ field.nice_name}};
+        {% elif field.named_list %}
+    public Map<String, {{ field.type.object_name }}> {{ field.nice_name}};
+        {% else %}
+    public {{ field.type.nice_name }} {{ field.nice_name}};
+        {% endif %}
+    {% endfor %}
+
+    public int indexInArray;
+    public XmlNode xmlNode;
+
+    {% if cls.has_id %}
+    //@NotNull
+    public static {{cls.nice_name}} get(String id){
+
+        {{cls.nice_name}} obj = getOrDefault(id, null);
+        if (obj != null)
+            return obj;
+        throw new Exception("not found element in {{cls.nice_name}} " + id);
+    }
+
+    public static {{cls.nice_name}} getOrDefault(String id, {{cls.nice_name}} def){
+        {{cls.nice_name}} res = {{loader}}.utilGetItem(itemsMap, id);
+        if (res != null)
+            return res;
+        return def;
+    }
+    {% endif %}
+
+    public void init(XmlNode node, XmlNode presetNode, int index, GLoader loader){
+
+		{% for field in cls.fields_without_id %}
+		{% if field.array and field.named_list %}
+        this.{{field.nice_name}} = {{loader}}.utilParse_NamedList(node, "{{field.name}}", loader.preset, presetNode, loader.fnString2{{field.type.nice_name}});
+        {% elif field.array %}
+        this.{{field.nice_name}} = {{loader}}.utilParse_List(node, "{{field.name}}", loader.preset, presetNode, loader.fnString2{{field.type.nice_name}});
+        {% elif field.named_list %}
+        this.{{field.nice_name}} = {{loader}}.utilParse_Named(node, "{{field.name}}", loader.preset, presetNode, loader.fnString2{{field.type.nice_name}});
+        {% else %}
+		this.{{field.nice_name}} = {{loader}}.utilParse_Single(node, "{{field.name}}", loader.preset, presetNode, loader.fnString2{{field.type.nice_name}});
+		{% endif %}
+    	{% endfor %}
+    	indexInArray = index;
+    }
+
+    public {{cls.nice_name}}(){}
+
+/*
+    public override string toString() {
+        return MoreObjects.toStringHelper(this)
+        {% for field in cls.fields %}
+                .add("{{field.nice_name}}", {{field.nice_name}})
+        {% endfor %}
+                .toString();
+    }
+    */
+}
