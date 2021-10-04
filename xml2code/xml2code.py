@@ -18,6 +18,7 @@ class Field:
         self.nice_name = nice_name
         self.array = array
         self.named_list = named_list
+        self.ext = False
 
 class Class:
     def __init__(self, name, nice_name = None, custom = False):
@@ -37,6 +38,8 @@ class Class:
 
 
 def first_rest_split(st):
+    if st.startswith('_'):
+        return ("", [st])
     items = st.split('_')
     first = items[0]
     rest = items[1:]
@@ -73,7 +76,7 @@ class Language:
 
         return self.Class(name, self.get_nice_class_name(name), True)
 
-    def create_field(self, name, tpstr):
+    def create_field(self, name, tpstr, make_nice_name):
 
         tp = None
 
@@ -100,12 +103,23 @@ class Language:
         if not tp:
             tp = self.get_class(tpstr)
 
-        nice_name = self.get_field_name(name)
+
+        nice_name = name
+        if make_nice_name:
+            nice_name = self.get_field_name(name)
+        else:
+            nice_name = name.lower()
 
         return Field(name, nice_name, tp, array, named_list)
 
 
     def make_fields(self, cls, attrs):
+
+
+        nice_fields = True
+
+        if cls.name in self.args.not_nice_field:
+            nice_fields = False
 
         for attr in attrs:
             name = attr.name
@@ -115,17 +129,30 @@ class Language:
                 continue
 
 
-            field = self.create_field(name, attr.value)
+            field = self.create_field(name, attr.value, nice_fields)
             if cls.has_field(field.name):
                 print("skipped dublicate field '{}' in '{}'".format(name, cls.name))
                 continue
 
             cls.fields.append(field)
 
+
+
             if name == "id":
                 cls.has_id = True
             else:
                 cls.fields_without_id.append(field)
+
+
+        for ext in self.args.ext:
+            #ext = ""
+            #building.field:EngNotation
+            (class_field_, type_) = ext.split(":")
+            (class_, field_) = class_field_.split(".")
+            if class_ == cls.name:
+                field = Field(field_, field_, self.Class(type_), False, False)
+                field.ext = True
+                cls.fields.append(field)
 
 
 
@@ -217,6 +244,9 @@ if __name__ == "__main__":
     parser.add_argument("--loader", help="loader class name", default="Loader")
     parser.add_argument(
         "-d", "--dest", help="destination folder for generated classes", default=".")
+
+    parser.add_argument('-e', '--ext', action='append', help='extended class fields', default=[])
+    parser.add_argument('--not_nice_field', action='append', help='not nice fields classes array', default=[])
 
 
     args = parser.parse_args()

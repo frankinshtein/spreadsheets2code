@@ -15,9 +15,11 @@ public class GConfig
 
 
     public int indexInArray;
+    public Node xmlNode;
 
 
-    public void init(Node node, int index, GLoader loader){
+    public void init(Node node, Node presetNode, int index, GLoader loader){
+
     	indexInArray = index;
     }
 

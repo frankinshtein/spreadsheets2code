@@ -5,8 +5,8 @@
 */
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Xml;
 
@@ -31,18 +31,32 @@ public class {{loader}}
     {% endfor %}
 
     public Func<String, int> fnString2int = (string str)=>{
+    	if (str == "")
+    	    return 0;
         return int.Parse(str);
     };
 
     public Func<String, float> fnString2float = (string str)=>{
-        return float.Parse(str);
+        if (str == "")
+    	    return 0.0f;
+        return float.Parse(str, CultureInfo.InvariantCulture);
+    };
+
+    public Func<String, bool> fnString2bool = (string str)=>{
+        if (str.Equals("yes", StringComparison.InvariantCultureIgnoreCase))
+            return true;
+        if (str.Equals("true", StringComparison.InvariantCultureIgnoreCase))
+            return true;
+        return str == "1";
     };
 
     public Func<String, long> fnString2long  = (string str)=>{
+    	if (str == "")
+    	    return 0;
         return long.Parse(str);
     };
 
-    public Func<String, String> fnString2String = (string str)=>{
+    public Func<String, String> fnString2string = (string str)=>{
         return str;
     };
 
@@ -50,102 +64,100 @@ public class {{loader}}
 
     public {{loader}}(){
         {% for cls in classes_with_id %}
-        fnString2{{cls.nice_name}} = str=> utilGetItem(map{{cls.nice_name}}, str);
+        fnString2{{cls.nice_name}} = str=> utilGetItem(map{{cls.nice_name}}, str, true);
         {% endfor %}
     }
 
-    public bool load(byte[] data, String preset){
+    public void load(byte[] data, String preset){
         this.data = data;
         this.preset = preset;
 
-        try {
-            XmlDocument document = new XmlDocument();
-            document.Load(new MemoryStream(data));
-            XmlElement root = document.DocumentElement;
 
-            timestamp = long.Parse(root.GetAttribute("timestamp"));
+        XmlDocument document = new XmlDocument();
+        document.Load(new MemoryStream(data));
+        XmlElement root = document.DocumentElement;
 
-            {% for cls in classes_with_id %}
-            /////////////load - {{cls.nice_name}}
+        timestamp = long.Parse(root.GetAttribute("timestamp"));
+
+        {% for cls in classes_with_id %}
+        /////////////load - {{cls.nice_name}}
+        {
+            XmlNode child = root.GetElementsByTagName("{{cls.name}}").Item(0).FirstChild;
+
+            List<{{cls.nice_name}}> items = list{{cls.nice_name}};
+            items.Clear();
+
+            Dictionary<String, {{cls.nice_name}}> itemsMap = map{{cls.nice_name}};
+            itemsMap.Clear();
+
+            while(child != null)
             {
-                XmlNode child = root.GetElementsByTagName("{{cls.name}}").Item(0).FirstChild;
-
-                Dictionary<String, {{cls.nice_name}}> itemsMap = map{{cls.nice_name}};
-                itemsMap.Clear();
-
-                while(child != null)
-                {
-                    if (child.NodeType == XmlNodeType.Element) {
-                        {{cls.nice_name}} item = new {{cls.nice_name}}();
-                        item.id = utilParse_String_(child, "id", preset);
-                        itemsMap.Add(item.id.ToLower(), item);
-                        item.xmlNode = child;
-                    }
-                    child = child.NextSibling;
+                if (child.NodeType == XmlNodeType.Element) {
+                    {{cls.nice_name}} item = new {{cls.nice_name}}();
+                    item.id = utilParse_String_(child, "id", preset);
+                    itemsMap[item.id.ToLower()] = item;
+                    item._xmlNode = child;
+                    item._indexInArray = items.Count;
+                    items.Add(item);
                 }
+                child = child.NextSibling;
             }
-            {% endfor %}
+        }
+        {% endfor %}
 
-            ///init all classes
+        ///init all classes
 
-            {% for cls in classes %}
-            /////////////load - {{cls.nice_name}}
+        {% for cls in classes %}
+        /////////////load - {{cls.nice_name}}
+        {
+            //XmlNode child = root.GetElementsByTagName("{{cls.name}}").Item(0).FirstChild;
+            List<{{cls.nice_name}}> items = list{{cls.nice_name}};
+            //items.Clear();
+
+
+            for (int i = 0; i < items.Count; ++i)
             {
-                XmlNode child = root.GetElementsByTagName("{{cls.name}}").Item(0).FirstChild;
-                List<{{cls.nice_name}}> items = list{{cls.nice_name}};
-                items.Clear();
+                var item = items[i];
 
-                while(child != null)
-                {
-                    if (child.NodeType == XmlNodeType.Element) {
+                XmlNode presetNode = null;
 
-                        XmlNode presetNode = null;
-
-                        {% if cls.has_id %}
-                        String id = utilParse_String_(child, "id", preset);
-                        {{cls.nice_name}} item = utilGetItem(map{{cls.nice_name}}, id);
-
-                        {{cls.nice_name}} presetItem = utilGetItem(map{{cls.nice_name}}, id + "#" + preset);
-                        if (presetItem != null)
-                            presetNode = presetItem.xmlNode;
-                        {% else %}
-                        {{cls.nice_name}} item = new {{cls.nice_name}}();
-                        item.xmlNode = child;
-                        {% endif %}
-                        item.init(child, presetNode, items.Count, this);
-                        items.Add(item);
-                    }
-                    child = child.NextSibling;
-                }
-
-                /*
                 {% if cls.has_id %}
-                for ({{cls.nice_name}} presetItem:items){
-                    String end =  "#"+preset;
-                    if (presetItem.id.endsWith(end)){
-                        {{cls.nice_name}} mainItem = utilGetItem(map{{cls.nice_name}}, presetItem.id.substring(0, presetItem.id.length() - end.length()));
+                //String id = utilParse_String_(item._xmlNode, "id", preset);
+                //if (id.Length == 0)
+                //    continue;
 
-                        {% for field in cls.fields %}
-                        if (presetItem.has_{{field.nice_name}})
-                            mainItem.{{field.nice_name}} = presetItem.{{field.nice_name}};
-                        {% endfor %}
-                    }
-                }
+                //{{cls.nice_name}} item = utilGetItem(map{{cls.nice_name}}, id, true);
+
+                {{cls.nice_name}} presetItem = null;
+                if (preset != null)
+                    presetItem = utilGetItem(map{{cls.nice_name}}, item.id + "#" + preset, false);
+                if (presetItem != null)
+                    presetNode = presetItem._xmlNode;
+                {% else %}
+                {{cls.nice_name}} item = new {{cls.nice_name}}();
+                //item.xmlNode = element;
                 {% endif %}
-                */
+                item.init(presetNode, this);
+                
             }
-            {% endfor %}
 
-            return true;
-        } catch (Exception ex)
-        {}
-        /*
-        catch (SAXException ex)
-        {}
-        catch (IOException ex)
-        {}*/
+            /*
+            {% if cls.has_id %}
+            for ({{cls.nice_name}} presetItem:items){
+                String end =  "#"+preset;
+                if (presetItem.id.endsWith(end)){
+                    {{cls.nice_name}} mainItem = utilGetItem(map{{cls.nice_name}}, presetItem.id.substring(0, presetItem.id.length() - end.length()));
 
-        return false;
+                    {% for field in cls.fields %}
+                    if (presetItem.has_{{field.nice_name}})
+                        mainItem.{{field.nice_name}} = presetItem.{{field.nice_name}};
+                    {% endfor %}
+                }
+            }
+            {% endif %}
+            */
+        }
+        {% endfor %}
     }
 
 
@@ -163,12 +175,14 @@ public class {{loader}}
 
 
     private static List<T> utilParse_String2List<T>(String st, Func<String, T> fn) {
-        var items = st.Split(',');
         var ls = new List<T>();
-        for (int i = 0; i < items.Length; ++i) {
-            var item = items[i].Trim();
-            var res = fn(item);
-            ls.Add(res);
+        if (st.Length > 0){
+	        var items = st.Split(',');
+	        for (int i = 0; i < items.Length; ++i) {
+	            var item = items[i].Trim();
+	            var res = fn(item);
+	            ls.Add(res);
+	        }
         }
         return ls;
     }
@@ -179,12 +193,12 @@ public class {{loader}}
         return fn(st);
     }
 
-    static List<T> utilParse_List<T>(XmlNode node, String name, String preset, XmlNode presetNode, Func<String, T> fn)
+    public static List<T> utilParse_List<T>(XmlNode node, String name, String preset, XmlNode presetNode, Func<String, T> fn)
     {
         return utilParse_String2List(utilParse_String(node, name, preset, presetNode), fn);
     }
 
-    static Dictionary<String, T> utilParse_Named<T>(XmlNode node, String name, String preset, XmlNode presetNode, Func<String, T> fn) {
+    public static Dictionary<String, T> utilParse_Named<T>(XmlNode node, String name, String preset, XmlNode presetNode, Func<String, T> fn) {
 
         var attrs = node.Attributes;
         String pref = name + ".";
@@ -249,11 +263,15 @@ public class {{loader}}
 
 
 
-    public static T utilGetItem<T>(Dictionary<String, T> itemsMap, String name) {
+    public static T utilGetItem<T>(Dictionary<String, T> itemsMap, String name, bool throwException) {
+        if (string.IsNullOrEmpty(name))
+            return default;
         name = name.ToLower();
         T res;
         if (itemsMap.TryGetValue(name, out res))
             return res;
+        if (throwException)
+            throw new KeyNotFoundException(name);
         return default;
     }
 }

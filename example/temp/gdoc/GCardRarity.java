@@ -17,6 +17,7 @@ public class GCardRarity
     public String id;
 
     public int indexInArray;
+    public Node xmlNode;
 
     @NotNull
     public static GCardRarity get(String id){
@@ -34,8 +35,8 @@ public class GCardRarity
         return def;
     }
 
-    public void init(Node node, int index, GLoader loader){
-		this.id = GLoader.utilParse_String(node, "id", loader.preset);
+    public void init(Node node, Node presetNode, int index, GLoader loader){
+
     	indexInArray = index;
     }
 

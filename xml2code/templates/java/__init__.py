@@ -18,6 +18,11 @@ def create(args):
     config.add_class("int", JavaClass("int").set_object_name("Integer"))
     config.add_class("float", JavaClass("float").set_object_name("Float"))
     config.add_class("double", JavaClass("double").set_object_name("Double"))
+
+    bool_ = JavaClass("bool")
+    config.add_class("bool", bool_)
+    config.add_class("boolean", bool_)
+
     config.extension = ".java"
 
     return config

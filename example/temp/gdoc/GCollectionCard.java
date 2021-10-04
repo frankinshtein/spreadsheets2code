@@ -19,6 +19,7 @@ public class GCollectionCard
     public GCardRarity rarity;
 
     public int indexInArray;
+    public Node xmlNode;
 
     @NotNull
     public static GCollectionCard get(String id){
@@ -36,10 +37,10 @@ public class GCollectionCard
         return def;
     }
 
-    public void init(Node node, int index, GLoader loader){
-		this.id = GLoader.utilParse_String(node, "id", loader.preset);
-		this.collection =  GLoader.utilGetItem(loader.mapGCollection, GLoader.utilParse_String(node, "collection", loader.preset));
-		this.rarity =  GLoader.utilGetItem(loader.mapGCardRarity, GLoader.utilParse_String(node, "rarity", loader.preset));
+    public void init(Node node, Node presetNode, int index, GLoader loader){
+
+		this.collection = GLoader.utilParse_Single(node, "collection", loader.preset, presetNode, loader.fnString2GCollection);
+		this.rarity = GLoader.utilParse_Single(node, "rarity", loader.preset, presetNode, loader.fnString2GCardRarity);
     	indexInArray = index;
     }
 

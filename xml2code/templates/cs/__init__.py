@@ -18,6 +18,10 @@ def create(args):
     config.add_class("int", CSClass("int"))
     config.add_class("float", CSClass("float"))
     config.add_class("double", CSClass("double"))
+    bool_ = CSClass("bool")
+    config.add_class("bool", bool_)
+    config.add_class("boolean", bool_)
+
     config.extension = ".cs"
 
     return config

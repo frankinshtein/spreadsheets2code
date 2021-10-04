@@ -18,6 +18,7 @@ public class GCollection
     public int level;
 
     public int indexInArray;
+    public Node xmlNode;
 
     @NotNull
     public static GCollection get(String id){
@@ -35,9 +36,9 @@ public class GCollection
         return def;
     }
 
-    public void init(Node node, int index, GLoader loader){
-		this.id = GLoader.utilParse_String(node, "id", loader.preset);
-		this.level = GLoader.utilParse_int(node, "level", loader.preset);
+    public void init(Node node, Node presetNode, int index, GLoader loader){
+
+		this.level = GLoader.utilParse_Single(node, "level", loader.preset, presetNode, loader.fnString2int);
     	indexInArray = index;
     }
 

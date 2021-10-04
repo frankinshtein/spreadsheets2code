@@ -14,12 +14,13 @@ public class GSingle
 	public static ArrayList<GSingle> items = new ArrayList<>();
 
 	public static Map<String, GSingle> itemsMap = new HashMap<>();
-    public List<Tuple<String, int>> level;
-    public List<int> value;
-    public List<Tuple<String, List<String>>> test;
     public String id;
+    public List<Integer> value;
+    public Map<String, Integer> level;
+    public Map<String, List<String>> test;
 
     public int indexInArray;
+    public Node xmlNode;
 
     @NotNull
     public static GSingle get(String id){
@@ -37,11 +38,11 @@ public class GSingle
         return def;
     }
 
-    public void init(Node node, int index, GLoader loader){
-		this.level = GLoader.utilParse_NamedList<int>(node, "level", loader.preset);
-		this.value = GLoader.utilParse_int(node, "value", loader.preset);
-		this.test = GLoader.utilParse_NamedList< List<String> >(node, "test", loader.preset);
-		this.id = GLoader.utilParse_String(node, "id", loader.preset);
+    public void init(Node node, Node presetNode, int index, GLoader loader){
+
+        this.value = GLoader.utilParse_List(node, "value", loader.preset, presetNode, loader.fnString2int);
+        this.level = GLoader.utilParse_Named(node, "level", loader.preset, presetNode, loader.fnString2int);
+        this.test = GLoader.utilParse_NamedList(node, "test", loader.preset, presetNode, loader.fnString2String);
     	indexInArray = index;
     }
 
@@ -51,10 +52,10 @@ public class GSingle
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("level", level)
-                .add("value", value)
-                .add("test", test)
                 .add("id", id)
+                .add("value", value)
+                .add("level", level)
+                .add("test", test)
                 .toString();
     }
 }
