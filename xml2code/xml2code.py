@@ -45,6 +45,8 @@ def first_rest_split(st):
     rest = items[1:]
     return first, rest
 
+ids = ["id", "type"]
+
 class Language:
     def __init__(self, args):
         self.name = args.language
@@ -83,14 +85,14 @@ class Language:
         if not tpstr:
             tp = self.get_class("string")
 
-        if tpstr == "id":
+        if tpstr in ids:
             tp = self.get_class("string")
 
         if tpstr == 'string' or tpstr == 'str':
             tp = self.get_class("string")
 
         array = False
-        if tpstr[0] == "[":
+        if tpstr and tpstr[0] == "[":
             array = True
             tpstr = tpstr[1:-1]
 
@@ -138,7 +140,7 @@ class Language:
 
 
 
-            if name == "id":
+            if name in ids:
                 cls.has_id = True
             else:
                 cls.fields_without_id.append(field)
@@ -203,6 +205,7 @@ def gen(args, xml_res_file, dest_folder):
             continue
 
         class_name = class_node.nodeName
+        print(f"parsing {class_name}")
         cls = lang.Class(class_name, lang.get_nice_class_name(class_name))
 
         classes.append(cls)

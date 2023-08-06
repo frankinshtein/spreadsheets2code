@@ -4,21 +4,19 @@ import os.path
 import codecs
 import time
 import collections
+import sys
+
 
 from xml.sax.saxutils import quoteattr
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-import sys
+from oauth2client.service_account import ServiceAccountCredentials
 
-# If modifying these scopes, delete the file token.pickle.
+
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
-PY3 = sys.version_info[0] == 3
-if PY3:
-    string_type = str
-else:
-    string_type = basestring
+string_type = str
 
 def fix_field(name):
     res = ""
@@ -89,19 +87,22 @@ class matrix:
         self.cells[y][x] = str(value)
 
 
+ids = ["id", "type"]
 def export_table(args, mat, sheet_name, tables):
 
     print("  {}".format(sheet_name))
 
     preset = args.preset
 
-    if mat.get(1, 0) == 'id' and mat.get(0, 1) != 'id':
+    if mat.get(1, 0) in ids and mat.get(0, 1) not in ids:
+        mat.set(1, 0, "id")
         mat.transpose()
 
     result = ""
 
-    if mat.get(0, 1) == "id":
-        mat.set(0, 0, "id")
+    if mat.get(0, 1) in ids:
+        mat.set(0, 1, "id")
+        mat.set(0, 0, mat.get(0, 1))
 
     sheet_name = fix_field(sheet_name)
     y = 1
@@ -230,9 +231,6 @@ def export_sheet(args, sheet_name, values, tables):
 
                 name = cell[1:]
 
-                if name == "loot_box_currency_drop":
-                    q = 0
-
                 sub_width = mat.width - x
                 for mx in range(x + 1, mat.width):
                     cell = mat.get(mx, y + 1)
@@ -275,19 +273,23 @@ def main(args):
     # created automatically when the authorization flow completes for the first
     # time.
 
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(args.credentials, SCOPES)
-            creds = flow.run_local_server()
-        # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token, protocol=2)
+    if args.service_account:
+        creds = ServiceAccountCredentials.from_json_keyfile_name(args.service_account, SCOPES)
+    else:
+        if os.path.exists('token.pickle'):
+            with open('token.pickle', 'rb') as token:
+                creds = pickle.load(token)
+
+        # If there are no (valid) credentials available, let the user log in.
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(args.credentials, SCOPES)
+                creds = flow.run_local_server()
+            # Save the credentials for the next run
+            with open('token.pickle', 'wb') as token:
+                pickle.dump(creds, token, protocol=2)
 
     service = build('sheets', 'v4', credentials=creds)
 
@@ -350,6 +352,7 @@ if __name__ == '__main__':
     parser.add_argument("--diff", help="diff/merge friendly xml view", default=True)
     #parser.add_argument("-b", "--bom", help="add utf8 bom symbol", action="store_true", default=False)
 #   parser.add_argument("-t", "--timestamp", help="adds timestamp from internet using ntplib", action="store_true", default=False)
+    parser.add_argument("--service_account", help="service account credentials json file", default="credentials.json")
     parser.add_argument("-c", "--credentials", help="credentials json file", default="credentials.json")
 
     parser.add_argument("--preset", help="compile time preset", required=False, default="")
