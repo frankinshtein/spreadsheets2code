@@ -1,0 +1,72 @@
+/*
+ file was automatically generated
+*/
+
+using System;
+using System.Collections.Generic;
+using System.Xml;
+
+namespace {{lang.args.package}}
+{
+    public class {{cls.nice_name}}
+    {
+        {% for field in cls.fields %}
+            {% if field.array and field.named_list %}
+        public Dictionary<string, List<{{ field.type.object_name }}>> {{ field.nice_name}};
+            {% elif field.array %}
+        public List<{{ field.type.object_name }}> {{ field.nice_name}};
+            {% elif field.named_list %}
+        public Dictionary<string, {{ field.type.object_name }}> {{ field.nice_name}};
+            {% else %}
+        public {{ field.type.nice_name }} {{ field.nice_name}};
+            {% endif %}
+        {% endfor %}
+
+        public override string ToString()
+        {
+            return $"{{cls.nice_name}}({Id})";
+        }
+
+        {% if cls.has_id %}
+        public static {{cls.nice_name}} Get(string id)
+        {
+            return {{loader}}.UtilGetItem(ItemsDict, id, true);
+        }
+
+        public static {{cls.nice_name}} GetOrDefault(string id, {{cls.nice_name}} def = null)
+        {
+            {{cls.nice_name}} res = {{loader}}.UtilGetItem(ItemsDict, id, false);
+            if (res != null)
+                return res;
+            return def;
+        }
+        {% endif %}
+
+        #region Internal
+        public static List<{{cls.nice_name}}> ItemsList;
+        {% if cls.has_id %}
+        public static Dictionary<string, {{cls.nice_name}}> ItemsDict;
+        {% endif %}
+
+        public int _indexInArray;
+        public XmlNode _xmlNode;
+
+
+        public void Init(XmlNode presetNode, {{loader}} loader)
+        {
+            {% for field in cls.fields_without_id %}
+            {% if field.ext %}
+            {% elif field.array and field.named_list %}
+            {{field.nice_name}} = {{loader}}.UtilParse_NamedList(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2{{field.type.nice_name}});
+            {% elif field.array %}
+            {{field.nice_name}} = {{loader}}.UtilParse_List(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2{{field.type.nice_name}});
+            {% elif field.named_list %}
+            {{field.nice_name}} = {{loader}}.UtilParse_Named(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2{{field.type.nice_name}});
+            {% else %}
+            {{field.nice_name}} = {{loader}}.UtilParse_Single(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2{{field.type.nice_name}});
+            {% endif %}
+            {% endfor %}
+        }
+        #endregion
+    }
+}
