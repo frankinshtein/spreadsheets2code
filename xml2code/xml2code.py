@@ -36,7 +36,6 @@ class Class:
         return name in names
 
 
-
 def first_rest_split(st):
     if st.startswith('_'):
         return "", [st]
@@ -44,6 +43,7 @@ def first_rest_split(st):
     first = items[0]
     rest = items[1:]
     return first, rest
+
 
 ids = ["id", "type"]
 
@@ -56,7 +56,6 @@ class Language:
         self.prefix = args.prefix
         self.args = args
         self.Class = Class
-
 
     def add_class(self, name, cls):
         self.classes[name] = cls
@@ -79,7 +78,7 @@ class Language:
 
         return self.Class(name, self.get_nice_class_name(name), True)
 
-    def create_field(self, name, tpstr:str, make_nice_name):
+    def create_field(self, name, tpstr: str, make_nice_name):
 
         tp = None
         array = False
@@ -154,7 +153,6 @@ class Language:
                 cls.fields.append(field)
 
 
-
 def gen(args, xml_res_file, dest_folder):
     sys.path.append(os.path.join(os.path.dirname(__file__), "templates"))
 
@@ -167,7 +165,6 @@ def gen(args, xml_res_file, dest_folder):
         os.makedirs(dest_folder)
 
     listdir = os.listdir(dest_folder)
-
 
     xml_res_file = os.path.normpath(xml_res_file)
     xml_res_file = xml_res_file.replace("\\", "/")
@@ -185,20 +182,20 @@ def gen(args, xml_res_file, dest_folder):
 
     loader = args.prefix + args.loader
 
-    def save_if_changed(name, content):
-        if name in listdir:
-            listdir.remove(name)
-        name = os.path.join(dest_folder, name)
-        print("saving {}".format(name))
+    def save_if_changed(save_class_name, content):
+        if save_class_name in listdir:
+            listdir.remove(save_class_name)
+        save_class_name = os.path.join(dest_folder, save_class_name)
+        print("saving {}".format(save_class_name))
         try:
-            with open(name, "r") as rd:
+            with open(save_class_name, "r") as rd:
                 data = rd.read()
                 if data == content:
                     return
         except IOError:
             pass
 
-        with open(name, "w") as rd:
+        with open(save_class_name, "w") as rd:
             rd.write(content)
 
     for class_node in root.childNodes:
@@ -244,8 +241,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="generates code from exported xml")
     parser.add_argument("xml", help="xml file to process")
     parser.add_argument("-l", "--language", help="language", default="java")
-    parser.add_argument("-p", "--package", help="package/namespace", default="com.package.name")
-    parser.add_argument("--prefix", help="generated classes prefix", default="G")
+    parser.add_argument("-p", "--package", help="package/namespace", default="")
+    parser.add_argument("--static_class", help="static class", default="")
+    parser.add_argument("--prefix", help="generated classes prefix", default="")
     parser.add_argument("--loader", help="loader class name", default="Database")
     parser.add_argument("-d", "--dest", help="destination folder for generated classes", default=".")
     parser.add_argument("-g", "--generated", help="generated folder name, can't be empty or '.'", default="Generated")

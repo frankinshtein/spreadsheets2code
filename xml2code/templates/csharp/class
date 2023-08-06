@@ -2,12 +2,17 @@
  file was automatically generated
 */
 
-using System;
 using System.Collections.Generic;
 using System.Xml;
 
+{% if lang.args.package %}
 namespace {{lang.args.package}}
 {
+{% endif %}
+{% if lang.args.static_class %}
+public sealed partial class {{lang.args.static_class}}
+{
+{% endif %}
     public class {{cls.nice_name}}
     {
         {% for field in cls.fields %}
@@ -69,4 +74,9 @@ namespace {{lang.args.package}}
         }
         #endregion
     }
+{% if lang.args.static_class %}
 }
+{% endif %}
+{% if lang.args.package %}
+}
+{% endif %}

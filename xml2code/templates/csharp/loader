@@ -8,8 +8,14 @@ using System.Globalization;
 using System.IO;
 using System.Xml;
 
+{% if lang.args.package %}
 namespace {{lang.args.package}}
 {
+{% endif %}
+{% if lang.args.static_class %}
+public sealed partial class {{lang.args.static_class}}
+{
+{% endif %}
     public class {{loader}}
     {
         public string Preset;
@@ -253,4 +259,9 @@ namespace {{lang.args.package}}
             return default;
         }
     }
+{% if lang.args.static_class %}
 }
+{% endif %}
+{% if lang.args.package %}
+}
+{% endif %}
