@@ -16,6 +16,12 @@ namespace {{lang.args.package}}
 public sealed partial class {{lang.args.static_class}}
 {
 {% endif %}
+
+    public interface IConfigItem
+    {
+        public string Id {get; set;}
+    }
+
     public class {{loader}}
     {
         public string Preset;

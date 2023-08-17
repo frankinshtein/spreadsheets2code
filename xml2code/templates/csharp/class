@@ -13,7 +13,7 @@ namespace {{lang.args.package}}
 public sealed partial class {{lang.args.static_class}}
 {
 {% endif %}
-    public class {{cls.nice_name}}
+    public class {{cls.nice_name}}:IConfigItem
     {
         {% for field in cls.fields %}
             {% if field.array and field.named_list %}
@@ -23,7 +23,7 @@ public sealed partial class {{lang.args.static_class}}
             {% elif field.named_list %}
         public Dictionary<string, {{ field.type.object_name }}> {{ field.nice_name}};
             {% else %}
-        public {{ field.type.nice_name }} {{ field.nice_name}};
+        public {{ field.type.nice_name }} {{ field.nice_name}} {get; set;}
             {% endif %}
         {% endfor %}
 
