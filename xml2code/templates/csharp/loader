@@ -20,6 +20,7 @@ public sealed partial class {{lang.args.static_class}}
     public interface IConfigItem
     {
         public string Id {get; set;}
+        public int IndexInArray {get; set;}
     }
 
     public class {{loader}}
@@ -113,7 +114,7 @@ public sealed partial class {{lang.args.static_class}}
                         item.Id = UtilParse_String_(child, "id", preset);
                         itemsMap[item.Id.ToLower()] = item;
                         item._xmlNode = child;
-                        item._indexInArray = items.Count;
+                        item.IndexInArray = items.Count;
                         items.Add(item);
                     }
                     child = child.NextSibling;

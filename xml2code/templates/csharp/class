@@ -26,6 +26,7 @@ public sealed partial class {{lang.args.static_class}}
         public {{ field.type.nice_name }} {{ field.nice_name}} {get; set;}
             {% endif %}
         {% endfor %}
+        public int IndexInArray {get;set;}
 
         public override string ToString()
         {
@@ -53,7 +54,6 @@ public sealed partial class {{lang.args.static_class}}
         public static Dictionary<string, {{cls.nice_name}}> ItemsDict;
         {% endif %}
 
-        public int _indexInArray;
         public XmlNode _xmlNode;
 
 
