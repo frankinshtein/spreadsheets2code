@@ -13,7 +13,7 @@ namespace {{lang.args.package}}
 public sealed partial class {{lang.args.static_class}}
 {
 {% endif %}
-    public class {{cls.nice_name}}:IConfigItem
+    public sealed partial class {{cls.nice_name}}:IConfigItem
     {
         {% for field in cls.fields %}
             {% if field.array and field.named_list %}
