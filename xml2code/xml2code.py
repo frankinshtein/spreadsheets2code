@@ -9,14 +9,6 @@ from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 import sys
 
 
-class Field:
-    def __init__(self, name, nice_name, type, array, named_list):
-        self.type = type
-        self.name = name
-        self.nice_name = nice_name
-        self.array = array
-        self.named_list = named_list
-        self.ext = False
 
 
 class Class:
@@ -26,6 +18,7 @@ class Class:
         self.name = name
         self.has_id = False
         self.custom = custom
+        self.use_additional_field = False
         if nice_name:
             self.nice_name = nice_name
         else:
@@ -35,6 +28,15 @@ class Class:
         names = list(map(lambda field: field.name, self.fields))
         return name in names
 
+
+class Field:
+    def __init__(self, name, nice_name, type:Class, array, named_list):
+        self.type = type
+        self.name = name
+        self.nice_name = nice_name
+        self.array = array
+        self.named_list = named_list
+        self.ext = False
 
 def first_rest_split(st):
     if st.startswith('_'):
@@ -76,7 +78,12 @@ class Language:
         if name in self.classes:
             return self.classes[name]
 
-        return self.Class(name, self.get_nice_class_name(name), True)
+        cls = self.Class(name, self.get_nice_class_name(name), True)
+
+        if name in self.args.use_additional_field:
+            cls.use_additional_field = True
+
+        return cls
 
     def create_field(self, name, tpstr: str, make_nice_name):
 
@@ -116,12 +123,16 @@ class Language:
 
         return Field(name, nice_name, tp, array, named_list)
 
-    def make_fields(self, cls, attrs):
+    def make_fields(self, args, cls:Class, attrs):
 
         nice_fields = True
 
         if cls.name in self.args.not_nice_field:
             nice_fields = False
+
+
+        if cls.name == "campaign_quest":
+            pass
 
         for attr in attrs:
             name = attr.name
@@ -141,6 +152,10 @@ class Language:
                 cls.has_id = True
             else:
                 cls.fields_without_id.append(field)
+
+            #if field.type.use_additional_field:
+            #    field = self.create_field(name+"XXX", field.type.name, nice_fields)
+            #    cls.fields.append(field)
 
         for ext in self.args.ext:
             # ext = ""
@@ -206,11 +221,12 @@ def gen(args, xml_res_file, dest_folder):
         print(f"parsing {class_name}")
         cls = lang.Class(class_name, lang.get_nice_class_name(class_name))
 
+
         classes.append(cls)
 
         attrs = class_node.attributes.values()
 
-        lang.make_fields(cls, attrs)
+        lang.make_fields(args, cls, attrs)
 
         template_args = {"cls": cls, "lang": lang, "loader": loader}
 
@@ -249,6 +265,7 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--generated", help="generated folder name, can't be empty or '.'", default="Generated")
 
     parser.add_argument('-e', '--ext', action='append', help='extended class fields', default=[])
+    parser.add_argument('--use_additional_field', action='append', help='extended class fields', default=[])
     parser.add_argument('--not_nice_field', action='append', help='not nice fields classes array', default=[])
 
     args = parser.parse_args()

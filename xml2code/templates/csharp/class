@@ -22,8 +22,12 @@ public sealed partial class {{lang.args.static_class}}
         public List<{{ field.type.object_name }}> {{ field.nice_name}};
             {% elif field.named_list %}
         public Dictionary<string, {{ field.type.object_name }}> {{ field.nice_name}};
+            {% elif field.type.use_additional_field %}
+        public string {{ field.nice_name}} {get; set;}
+        public {{ field.type.nice_name }} {{ field.nice_name}}Object {get; set;}
             {% else %}
         public {{ field.type.nice_name }} {{ field.nice_name}} {get; set;}
+
             {% endif %}
         {% endfor %}
         public int IndexInArray {get;set;}
@@ -67,6 +71,9 @@ public sealed partial class {{lang.args.static_class}}
             {{field.nice_name}} = {{loader}}.UtilParse_List(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2{{field.type.nice_name}});
             {% elif field.named_list %}
             {{field.nice_name}} = {{loader}}.UtilParse_Named(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2{{field.type.nice_name}});
+            {% elif field.type.use_additional_field %}
+            {{field.nice_name}} = {{loader}}.UtilParse_Single(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2string);
+            {{field.nice_name}}Object = {{loader}}.UtilParse_Single(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2{{field.type.nice_name}});
             {% else %}
             {{field.nice_name}} = {{loader}}.UtilParse_Single(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2{{field.type.nice_name}});
             {% endif %}
