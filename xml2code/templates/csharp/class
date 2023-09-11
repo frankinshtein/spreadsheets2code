@@ -27,7 +27,6 @@ public sealed partial class {{lang.args.static_class}}
         public {{ field.type.nice_name }} {{ field.nice_name}}Object {get; set;}
             {% else %}
         public {{ field.type.nice_name }} {{ field.nice_name}} {get; set;}
-
             {% endif %}
         {% endfor %}
         public int IndexInArray {get;set;}
