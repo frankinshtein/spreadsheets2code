@@ -250,8 +250,7 @@ def gen(args, xml_res_file, dest_folder):
         if os.path.isfile(name):
             os.remove(name)
 
-
-if __name__ == "__main__":
+def run(params):
     import argparse
 
     parser = argparse.ArgumentParser(description="generates code from exported xml")
@@ -268,5 +267,9 @@ if __name__ == "__main__":
     parser.add_argument('--use_additional_field', action='append', help='extended class fields', default=[])
     parser.add_argument('--not_nice_field', action='append', help='not nice fields classes array', default=[])
 
-    args = parser.parse_args()
+    args = parser.parse_args(params)
     gen(args, args.xml, args.dest + "/")
+
+
+if __name__ == "__main__":
+    run(None)

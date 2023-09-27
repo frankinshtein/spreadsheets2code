@@ -65,16 +65,16 @@ public sealed partial class {{lang.args.static_class}}
             {% for field in cls.fields_without_id %}
             {% if field.ext %}
             {% elif field.array and field.named_list %}
-            {{field.nice_name}} = {{loader}}.UtilParse_NamedList(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2{{field.type.nice_name}});
+            {{field.nice_name}} = loader.UtilParse_NamedList(_xmlNode, "{{field.name}}", presetNode, loader.FnString2{{field.type.nice_name}});
             {% elif field.array %}
-            {{field.nice_name}} = {{loader}}.UtilParse_List(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2{{field.type.nice_name}});
+            {{field.nice_name}} = loader.UtilParse_List(_xmlNode, "{{field.name}}", presetNode, loader.FnString2{{field.type.nice_name}});
             {% elif field.named_list %}
-            {{field.nice_name}} = {{loader}}.UtilParse_Named(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2{{field.type.nice_name}});
+            {{field.nice_name}} = loader.UtilParse_Named(_xmlNode, "{{field.name}}", presetNode, loader.FnString2{{field.type.nice_name}});
             {% elif field.type.use_additional_field %}
-            {{field.nice_name}} = {{loader}}.UtilParse_Single(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2string);
-            {{field.nice_name}}Object = {{loader}}.UtilParse_Single(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2{{field.type.nice_name}});
+            {{field.nice_name}} = loader.UtilParse_Single(_xmlNode, "{{field.name}}", presetNode, loader.FnString2string);
+            {{field.nice_name}}Object = loader.UtilParse_Single(_xmlNode, "{{field.name}}", presetNode, loader.FnString2{{field.type.nice_name}});
             {% else %}
-            {{field.nice_name}} = {{loader}}.UtilParse_Single(_xmlNode, "{{field.name}}", loader.Preset, presetNode, loader.FnString2{{field.type.nice_name}});
+            {{field.nice_name}} = loader.UtilParse_Single(_xmlNode, "{{field.name}}", presetNode, loader.FnString2{{field.type.nice_name}});
             {% endif %}
             {% endfor %}
         }

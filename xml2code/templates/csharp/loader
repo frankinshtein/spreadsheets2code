@@ -28,6 +28,8 @@ public sealed partial class {{lang.args.static_class}}
         public string Preset;
         public long Timestamp;
 
+        public readonly List<string> ParseErrors = new();
+        private string _current;
 
         {% for cls in classes %}
         public List<{{cls.nice_name}}> List{{cls.nice_name}} = new ();
@@ -86,7 +88,7 @@ public sealed partial class {{lang.args.static_class}}
             {% endfor %}
         }
 
-        public void Load(Stream stream, string preset = null)
+        public void Load(Stream stream, string preset = null, bool throwError = true)
         {
             Preset = preset;
 
@@ -111,7 +113,7 @@ public sealed partial class {{lang.args.static_class}}
                 {
                     if (child.NodeType == XmlNodeType.Element) {
                         {{cls.nice_name}} item = new {{cls.nice_name}}();
-                        item.Id = UtilParse_String_(child, "id", preset);
+                        item.Id = UtilParse_String_(child, "id");
                         itemsMap[item.Id.ToLower()] = item;
                         item._xmlNode = child;
                         item.IndexInArray = items.Count;
@@ -127,6 +129,7 @@ public sealed partial class {{lang.args.static_class}}
             {% for cls in classes %}
             /////////////load - {{cls.nice_name}}
             {
+                _current = "{{cls.name}}";
                 List<{{cls.nice_name}}> items = List{{cls.nice_name}};
 
                 for (int i = 0; i < items.Count; ++i)
@@ -136,7 +139,7 @@ public sealed partial class {{lang.args.static_class}}
                     XmlNode presetNode = null;
 
                     {% if cls.has_id %}
-                    //string id = UtilParse_String_(item._xmlNode, "id", preset);
+                    //string id = UtilParse_String_(item._xmlNode, "id");
                     //if (id.Length == 0)
                     //    continue;
 
@@ -155,6 +158,9 @@ public sealed partial class {{lang.args.static_class}}
                 }
             }
             {% endfor %}
+
+            if (throwError && ParseErrors.Count > 0)
+                throw new Exception(string.Join(", ", ParseErrors));
         }
 
 
@@ -182,24 +188,24 @@ public sealed partial class {{lang.args.static_class}}
             return ls;
         }
 
-        public static T UtilParse_Single<T>(XmlNode node, string name, string preset, XmlNode presetNode, Func<string, T> fn)
+        public T UtilParse_Single<T>(XmlNode node, string name, XmlNode presetNode, Func<string, T> fn)
         {
-            string st = UtilParse_String(node, name, preset, presetNode);
+            string st = UtilParse_String(node, name, presetNode);
             return fn(st);
         }
 
-        public static List<T> UtilParse_List<T>(XmlNode node, string name, string preset, XmlNode presetNode, Func<string, T> fn)
+        public List<T> UtilParse_List<T>(XmlNode node, string name, XmlNode presetNode, Func<string, T> fn)
         {
-            return UtilParse_String2List(UtilParse_String(node, name, preset, presetNode), fn);
+            return UtilParse_String2List(UtilParse_String(node, name, presetNode), fn);
         }
 
-        public static Dictionary<string, T> UtilParse_Named<T>(XmlNode node, string name, string preset, XmlNode presetNode, Func<string, T> fn) {
+        public Dictionary<string, T> UtilParse_Named<T>(XmlNode node, string name, XmlNode presetNode, Func<string, T> fn) {
 
             var attrs = node.Attributes;
             string pref = name + ".";
 
 
-            string suffix = "#" + preset;
+            string suffix = "#" + Preset;
 
             Dictionary<string, T> items = new Dictionary<string, T>(StringComparer.InvariantCultureIgnoreCase);
             for (int i = 0; i < attrs.Count; ++i)
@@ -213,7 +219,7 @@ public sealed partial class {{lang.args.static_class}}
                 string nam = attrName.Substring(pref.Length).ToLower();
                 string value = attrNode.Value;
 
-                if (preset != null){
+                if (Preset != null){
                     XmlNode nodePreset = attrs.GetNamedItem(attrName + suffix);
                     if (nodePreset != null)
                         value = nodePreset.Value;
@@ -231,26 +237,34 @@ public sealed partial class {{lang.args.static_class}}
             return rs.entrySet().stream().collect(Collectors.toMap(entry->entry.getKey(), entry->utilParse_String2List(entry.getValue(), fn)));
         }
     */
-        private static string UtilParse_String(XmlNode node, string name, string preset, XmlNode presetNode)
+        private string UtilParse_String(XmlNode node, string name, XmlNode presetNode)
         {
             string ret = null;
             if (presetNode != null)
-                ret = UtilParse_String_(presetNode, name, preset);
+                ret = UtilParse_String_(presetNode, name);
             if (ret != null && ret.Length > 0)
                 return ret;
-            return UtilParse_String_(node, name, preset);
+            return UtilParse_String_(node, name);
         }
 
-        private static string UtilParse_String_(XmlNode node, string name, string preset)
+        private string UtilParse_String_(XmlNode node, string name)
         {
-            if (preset != null)
+            if (Preset != null)
             {
-                string key = name + "#" + preset;
+                string key = name + "#" + Preset;
                 XmlNode attr = node.Attributes!.GetNamedItem(key);
                 if (attr != null)
                     return attr.Value;
             }
-            string value = node.Attributes!.GetNamedItem(name)!.Value;
+
+            var namedItem = node.Attributes!.GetNamedItem(name);
+            if (namedItem == null)
+            {
+                ParseErrors.Add($"missing field '{_current}.{name}'");
+                return "";
+            }
+
+            string value = namedItem!.Value;
             return value;
         }
 
