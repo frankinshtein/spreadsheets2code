@@ -32,59 +32,22 @@ public sealed partial class {{lang.args.static_class}}
         private string _current;
 
         {% for cls in classes %}
-        public List<{{cls.nice_name}}> List{{cls.nice_name}} = new ();
+        public List<{{cls.name}}> List{{cls.name}} = new ();
         {% if cls.has_id %}
-        public Dictionary<string, {{cls.nice_name}}> Dict{{cls.nice_name}} = new (StringComparer.InvariantCultureIgnoreCase);
+        public Dictionary<string, {{cls.name}}> Dict{{cls.name}} = new (StringComparer.InvariantCultureIgnoreCase);
         {% else %}
         {% endif %}
 
         {% endfor %}
 
         {% for cls in classes_with_id %}
-        public Func<string, {{cls.nice_name}}> FnString2{{cls.nice_name}};
+        public Func<string, {{cls.name}}> Parse_{{cls.table_name}};
         {% endfor %}
-
-        public Func<string, int> FnString2int = (string str)=>{
-            if (str == "")
-                return 0;
-            return int.Parse(str);
-        };
-
-        public Func<string, float> FnString2float = (string str)=>{
-            if (str == "")
-                return 0.0f;
-            return float.Parse(str, CultureInfo.InvariantCulture);
-        };
-
-        public Func<string, double> FnString2double = (string str)=>{
-            if (str == "")
-                return 0.0;
-            return double.Parse(str, CultureInfo.InvariantCulture);
-        };
-
-        public Func<string, bool> FnString2bool = (string str)=>{
-            if (str.Equals("yes", StringComparison.InvariantCultureIgnoreCase))
-                return true;
-            if (str.Equals("true", StringComparison.InvariantCultureIgnoreCase))
-                return true;
-            return str == "1";
-        };
-
-        public Func<string, long> FnString2long  = (string str)=>{
-            if (str == "")
-                return 0;
-            return long.Parse(str);
-        };
-
-        public Func<string, string> FnString2string = (string str)=>{
-            return str;
-        };
-
 
 
         public {{loader}}(){
             {% for cls in classes_with_id %}
-            FnString2{{cls.nice_name}} = str=> UtilGetItem(Dict{{cls.nice_name}}, str, true);
+            Parse_{{cls.table_name}} = str=> UtilGetItem(Dict{{cls.name}}, str, true);
             {% endfor %}
         }
 
@@ -99,20 +62,20 @@ public sealed partial class {{lang.args.static_class}}
             Timestamp = long.Parse(root.GetAttribute("timestamp"));
 
             {% for cls in classes_with_id %}
-            //{{cls.nice_name}} load
+            //{{cls.name}} load
             {
                 XmlNode child = root.GetElementsByTagName("{{cls.name}}").Item(0)!.FirstChild;
 
-                var items = List{{cls.nice_name}};
+                var items = List{{cls.name}};
                 items.Clear();
 
-                var itemsMap = Dict{{cls.nice_name}};
+                var itemsMap = Dict{{cls.name}};
                 itemsMap.Clear();
 
                 while(child != null)
                 {
                     if (child.NodeType == XmlNodeType.Element) {
-                        {{cls.nice_name}} item = new {{cls.nice_name}}();
+                        {{cls.name}} item = new {{cls.name}}();
                         item.Id = UtilParse_String_(child, "id");
                         itemsMap[item.Id.ToLower()] = item;
                         item._xmlNode = child;
@@ -127,10 +90,10 @@ public sealed partial class {{lang.args.static_class}}
             //init all classes
 
             {% for cls in classes %}
-            /////////////load - {{cls.nice_name}}
+            /////////////load - {{cls.name}}
             {
                 _current = "{{cls.name}}";
-                List<{{cls.nice_name}}> items = List{{cls.nice_name}};
+                List<{{cls.name}}> items = List{{cls.name}};
 
                 for (int i = 0; i < items.Count; ++i)
                 {
@@ -143,15 +106,15 @@ public sealed partial class {{lang.args.static_class}}
                     //if (id.Length == 0)
                     //    continue;
 
-                    //{{cls.nice_name}} item = UtilGetItem(Dict{{cls.nice_name}}, id, true);
+                    //{{cls.name}} item = UtilGetItem(Dict{{cls.name}}, id, true);
 
-                    {{cls.nice_name}} presetItem = null;
+                    {{cls.name}} presetItem = null;
                     if (preset != null)
-                        presetItem = UtilGetItem(Dict{{cls.nice_name}}, item.Id + "#" + preset, false);
+                        presetItem = UtilGetItem(Dict{{cls.name}}, item.Id + "#" + preset, false);
                     if (presetItem != null)
                         presetNode = presetItem._xmlNode;
                     {% else %}
-                    {{cls.nice_name}} item = new {{cls.nice_name}}();
+                    {{cls.name}} item = new {{cls.name}}();
                     //item.xmlNode = element;
                     {% endif %}
                     item.Init(presetNode, this);
@@ -167,9 +130,9 @@ public sealed partial class {{lang.args.static_class}}
         public void AssignStaticInstances()
         {
             {% for cls in classes %}
-            {{cls.nice_name}}.ItemsList = List{{cls.nice_name}};
+            {{cls.name}}.ItemsList = List{{cls.name}};
             {% if cls.has_id %}
-            {{cls.nice_name}}.ItemsDict = Dict{{cls.nice_name}};
+            {{cls.name}}.ItemsDict = Dict{{cls.name}};
             {% else %}
             {% endif %}
             {% endfor %}

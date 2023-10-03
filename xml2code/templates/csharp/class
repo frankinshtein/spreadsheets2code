@@ -13,38 +13,38 @@ namespace {{lang.args.package}}
 public sealed partial class {{lang.args.static_class}}
 {
 {% endif %}
-    public sealed partial class {{cls.nice_name}}:IConfigItem
+    public sealed partial class {{cls.name}}:IConfigItem
     {
         {% for field in cls.fields %}
-            {% if field.array and field.named_list %}
-        public Dictionary<string, List<{{ field.type.object_name }}>> {{ field.nice_name}};
-            {% elif field.array %}
-        public List<{{ field.type.object_name }}> {{ field.nice_name}};
+            {% if field.is_array and field.named_list %}
+        public Dictionary<string, List<{{ field.clazz.name }}>> {{ field.nice_name}};
+            {% elif field.is_array %}
+        public List<{{ field.clazz.name }}> {{ field.nice_name}};
             {% elif field.named_list %}
-        public Dictionary<string, {{ field.type.object_name }}> {{ field.nice_name}};
-            {% elif field.type.use_additional_field %}
+        public Dictionary<string, {{ field.clazz.name }}> {{ field.nice_name}};
+            {% elif field.clazz.use_additional_field %}
         public string {{ field.nice_name}} {get; set;}
-        public {{ field.type.nice_name }} {{ field.nice_name}}Object {get; set;}
+        public {{ field.clazz.name }} {{ field.nice_name}}Object {get; set;}
             {% else %}
-        public {{ field.type.nice_name }} {{ field.nice_name}} {get; set;}
+        public {{ field.clazz.name }} {{ field.nice_name}} {get; set;}
             {% endif %}
         {% endfor %}
         public int IndexInArray {get;set;}
 
         public override string ToString()
         {
-            return $"{{cls.nice_name}}({Id})";
+            return $"{{cls.name}}({Id})";
         }
 
         {% if cls.has_id %}
-        public static {{cls.nice_name}} Get(string id)
+        public static {{cls.name}} Get(string id)
         {
             return {{loader}}.UtilGetItem(ItemsDict, id, true);
         }
 
-        public static {{cls.nice_name}} GetOrDefault(string id, {{cls.nice_name}} def = null)
+        public static {{cls.name}} GetOrDefault(string id, {{cls.name}} def = null)
         {
-            {{cls.nice_name}} res = {{loader}}.UtilGetItem(ItemsDict, id, false);
+            {{cls.name}} res = {{loader}}.UtilGetItem(ItemsDict, id, false);
             if (res != null)
                 return res;
             return def;
@@ -52,9 +52,9 @@ public sealed partial class {{lang.args.static_class}}
         {% endif %}
 
         #region Internal
-        public static List<{{cls.nice_name}}> ItemsList;
+        public static List<{{cls.name}}> ItemsList;
         {% if cls.has_id %}
-        public static Dictionary<string, {{cls.nice_name}}> ItemsDict;
+        public static Dictionary<string, {{cls.name}}> ItemsDict;
         {% endif %}
 
         public XmlNode _xmlNode;
@@ -62,21 +62,21 @@ public sealed partial class {{lang.args.static_class}}
 
         public void Init(XmlNode presetNode, {{loader}} loader)
         {
-            {% for field in cls.fields_without_id %}
-            {% if field.ext %}
-            {% elif field.array and field.named_list %}
-            {{field.nice_name}} = loader.UtilParse_NamedList(_xmlNode, "{{field.name}}", presetNode, loader.FnString2{{field.type.nice_name}});
-            {% elif field.array %}
-            {{field.nice_name}} = loader.UtilParse_List(_xmlNode, "{{field.name}}", presetNode, loader.FnString2{{field.type.nice_name}});
-            {% elif field.named_list %}
-            {{field.nice_name}} = loader.UtilParse_Named(_xmlNode, "{{field.name}}", presetNode, loader.FnString2{{field.type.nice_name}});
-            {% elif field.type.use_additional_field %}
-            {{field.nice_name}} = loader.UtilParse_Single(_xmlNode, "{{field.name}}", presetNode, loader.FnString2string);
-            {{field.nice_name}}Object = loader.UtilParse_Single(_xmlNode, "{{field.name}}", presetNode, loader.FnString2{{field.type.nice_name}});
-            {% else %}
-            {{field.nice_name}} = loader.UtilParse_Single(_xmlNode, "{{field.name}}", presetNode, loader.FnString2{{field.type.nice_name}});
-            {% endif %}
-            {% endfor %}
+{% for field in cls.fields_without_id %}
+    {% if field.ext %}
+    {% elif field.is_array and field.named_list %}
+            {{field.nice_name}} = loader.UtilParse_NamedList(_xmlNode, "{{field.name}}", presetNode, {{field.parse_method_name}});
+    {% elif field.is_array %}
+            {{field.nice_name}} = loader.UtilParse_List(_xmlNode, "{{field.name}}", presetNode, {{field.parse_method_name}});
+    {% elif field.named_list %}
+            {{field.nice_name}} = loader.UtilParse_Named(_xmlNode, "{{field.name}}", presetNode, {{field.parse_method_name}});
+    {% elif field.clazz.use_additional_field %}
+            {{field.nice_name}} = loader.UtilParse_Single(_xmlNode, "{{field.name}}", presetNode, {{field.parse_method_name}});
+            {{field.nice_name}}Object = loader.UtilParse_Single(_xmlNode, "{{field.name}}", presetNode, {{field.parse_method_name}});
+    {% else %}
+            {{field.nice_name}} = loader.UtilParse_Single(_xmlNode, "{{field.name}}", presetNode, {{field.parse_method_name}});
+    {% endif %}
+{% endfor %}
         }
         #endregion
     }

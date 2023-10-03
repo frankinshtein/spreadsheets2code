@@ -21,13 +21,12 @@ class CSLang(xml2code.Language):
 
 def create(args):
     config = CSLang(args)
-    config.Class = CSClass
-    config.add_class("string", CSClass("string"))
-    config.add_class("int", CSClass("int"))
-    config.add_class("float", CSClass("float"))
-    config.add_class("double", CSClass("double"))
+    config.add_class("string", xml2code.Class(config, "string"))
+    config.add_class("int", xml2code.Class(config, "int"))
+    config.add_class("float", xml2code.Class(config, "float"))
+    config.add_class("double", xml2code.Class(config, "double"))
 
-    bool_ = CSClass("bool")
+    bool_ = xml2code.Class(config, "bool")
     config.add_class("bool", bool_)
     config.add_class("boolean", bool_)
 

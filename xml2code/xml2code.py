@@ -10,19 +10,17 @@ import sys
 
 
 
-
 class Class:
-    def __init__(self, name, nice_name=None, custom=False):
+    def __init__(self, lang: 'Language', name: str, custom=True):
         self.fields = []
         self.fields_without_id = []
         self.name = name
         self.has_id = False
         self.custom = custom
         self.use_additional_field = False
-        if nice_name:
-            self.nice_name = nice_name
-        else:
-            self.nice_name = name
+        self.xml_node = None
+        self.lang = lang
+        self.table_name = name
 
     def has_field(self, name):
         names = list(map(lambda field: field.name, self.fields))
@@ -30,13 +28,24 @@ class Class:
 
 
 class Field:
-    def __init__(self, name, nice_name, type:Class, array, named_list):
-        self.type = type
+    def __init__(self, name: str,
+                 clazz: Class,
+                 is_array: bool,
+                 table_type_name: str,
+                 named_list):
+        self.clazz = clazz
         self.name = name
-        self.nice_name = nice_name
-        self.array = array
+        self.is_array = is_array
         self.named_list = named_list
         self.ext = False
+        if clazz.custom:
+            self.parse_method_name = f"ConfigFieldsParser.Parse_{table_type_name}"
+        else:
+            self.parse_method_name = f"loader.Parse_{table_type_name}"
+
+        self.nice_name = clazz.lang.get_nice_class_name(name)
+
+
 
 def first_rest_split(st):
     if st.startswith('_'):
@@ -57,54 +66,56 @@ class Language:
         self.extension = ""
         self.prefix = args.prefix
         self.args = args
-        self.Class = Class
 
-    def add_class(self, name, cls):
+    def add_class(self, name: str, cls: Class) -> Class:
         self.classes[name] = cls
         return cls
 
-    def get_nice_class_name(self, column):
+    def get_nice_class_name(self, column) -> str:
         first, rest = first_rest_split(column)
         ret = first.capitalize() + ''.join(word.capitalize() for word in rest)
         return self.prefix + ret
 
-    def get_field_name(self, column):
+    def get_field_name(self, column) -> str:
         first, rest = first_rest_split(column)
         first = first.casefold()
         ret = first + ''.join(word.capitalize() for word in rest)
         return ret
 
-    def get_class(self, name):
-        if name in self.classes:
-            return self.classes[name]
+    def get_class(self, table_type: str) -> Class:
+        if table_type in self.classes:
+            return self.classes[table_type]
 
-        cls = self.Class(name, self.get_nice_class_name(name), True)
+        cls = Class(self, table_type, True)
 
-        if name in self.args.use_additional_field:
+        if table_type in self.args.use_additional_field:
             cls.use_additional_field = True
+
+        self.classes[table_type] = cls
 
         return cls
 
-    def create_field(self, name, tpstr: str, make_nice_name):
+    def create_field(self, name: str, table_type_str: str) -> Field:
 
-        tp = None
-        array = False
+        clazz: Class | None = None
+        is_array = False
 
-        if not tpstr:
-            tp = self.get_class("string")
+        if not table_type_str:
+            clazz = self.get_class("string")
+            table_type_str = "string"
         else:
-            if tpstr[0] == "[" and tpstr[-1] == "]":
-                array = True
-                tpstr = tpstr[1:-1]
-            if tpstr.endswith("[]"):
-                array = True
-                tpstr = tpstr[0:-2]
+            if table_type_str[0] == "[" and table_type_str[-1] == "]":
+                is_array = True
+                table_type_str = table_type_str[1:-1]
+            if table_type_str.endswith("[]"):
+                is_array = True
+                table_type_str = table_type_str[0:-2]
 
-            if tpstr in ids:
-                tp = self.get_class("string")
+            if table_type_str in ids:
+                clazz = self.get_class("string")
 
-            if tpstr == 'string' or tpstr == 'str':
-                tp = self.get_class("string")
+            if table_type_str == 'string' or table_type_str == 'str':
+                clazz = self.get_class("string")
 
         named_list = False
         if "." in name:
@@ -112,27 +123,12 @@ class Language:
             left, right = name.split(".")
             name = left
 
-        if not tp:
-            tp = self.get_class(tpstr)
+        if not clazz:
+            clazz = self.get_class(table_type_str)
 
-        nice_name = name
-        if make_nice_name:
-            nice_name = self.get_field_name(name)
-        else:
-            nice_name = name.lower()
+        return Field(name, clazz, is_array, table_type_str, named_list)
 
-        return Field(name, nice_name, tp, array, named_list)
-
-    def make_fields(self, args, cls:Class, attrs):
-
-        nice_fields = True
-
-        if cls.name in self.args.not_nice_field:
-            nice_fields = False
-
-
-        if cls.name == "campaign_quest":
-            pass
+    def make_fields(self, args, cls: Class, attrs) -> None:
 
         for attr in attrs:
             name = attr.name
@@ -141,7 +137,7 @@ class Language:
             if "-" in name:
                 continue
 
-            field = self.create_field(name, attr.value, nice_fields)
+            field = self.create_field(name, attr.value)
             if cls.has_field(field.name):
                 print("skipped dublicate field '{}' in '{}'".format(name, cls.name))
                 continue
@@ -153,26 +149,28 @@ class Language:
             else:
                 cls.fields_without_id.append(field)
 
-            #if field.type.use_additional_field:
+            # if field.type.use_additional_field:
             #    field = self.create_field(name+"XXX", field.type.name, nice_fields)
             #    cls.fields.append(field)
 
+"""
         for ext in self.args.ext:
             # ext = ""
             # building.field:EngNotation
             (class_field_, type_) = ext.split(":")
             (class_, field_) = class_field_.split(".")
             if class_ == cls.name:
-                field = Field(field_, field_, self.Class(type_), False, False)
+                field = Field(field_, Class(self, type_), False, False)
                 field.ext = True
                 cls.fields.append(field)
+"""
 
 
 def gen(args, xml_res_file, dest_folder):
     sys.path.append(os.path.join(os.path.dirname(__file__), "templates"))
 
     module = __import__(args.language)
-    lang = module.create(args)
+    lang: Language = module.create(args)
 
     dest_folder = os.path.join(dest_folder, args.generated)
 
@@ -213,26 +211,37 @@ def gen(args, xml_res_file, dest_folder):
         with open(save_class_name, "w") as rd:
             rd.write(content)
 
-    for class_node in root.childNodes:
-        if class_node.nodeType == class_node.TEXT_NODE:
+    mapping: str
+    for mapping in args.mapping:
+        # minutes:TimeSpan
+        (field_value, type_value) = mapping.split(':')
+        cls = Class(lang, type_value, True)
+        lang.classes[field_value] = cls
+
+    for xml_node in root.childNodes:
+        if xml_node.nodeType == xml_node.TEXT_NODE:
             continue
 
-        class_name = class_node.nodeName
-        print(f"parsing {class_name}")
-        cls = lang.Class(class_name, lang.get_nice_class_name(class_name))
+        class_name = xml_node.nodeName
 
+        print(f"parsing {class_name}")
+        cls = Class(lang, lang.get_nice_class_name(class_name), False)
+        cls.xml_node = xml_node
+        cls.table_name = class_name
+        lang.classes[class_name] = cls
 
         classes.append(cls)
 
-        attrs = class_node.attributes.values()
 
-        lang.make_fields(args, cls, attrs)
+    for cls in classes:
+        fields = cls.xml_node.attributes.values()
+        lang.make_fields(args, cls, fields)
 
         template_args = {"cls": cls, "lang": lang, "loader": loader}
 
         buffer = io.StringIO()
         buffer.write(env.get_template("class").render(**template_args))
-        save_if_changed(cls.nice_name + lang.extension, buffer.getvalue())
+        save_if_changed(cls.name + lang.extension, buffer.getvalue())
 
     classes_with_id = list(filter(lambda v: v.has_id, classes))
     classes_without_id = list(filter(lambda v: not v.has_id, classes))
@@ -250,6 +259,7 @@ def gen(args, xml_res_file, dest_folder):
         if os.path.isfile(name):
             os.remove(name)
 
+
 def run(params):
     import argparse
 
@@ -264,6 +274,7 @@ def run(params):
     parser.add_argument("-g", "--generated", help="generated folder name, can't be empty or '.'", default="Generated")
 
     parser.add_argument('-e', '--ext', action='append', help='extended class fields', default=[])
+    parser.add_argument('--mapping', action='append', help='fields remapping, example minutes:TimeSpan', default=[])
     parser.add_argument('--use_additional_field', action='append', help='extended class fields', default=[])
     parser.add_argument('--not_nice_field', action='append', help='not nice fields classes array', default=[])
 
