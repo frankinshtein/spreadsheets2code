@@ -83,17 +83,7 @@ class Language:
         return ret
 
     def get_class(self, table_type: str) -> Class:
-        if table_type in self.classes:
-            return self.classes[table_type]
-
-        cls = Class(self, table_type, True)
-
-        if table_type in self.args.use_additional_field:
-            cls.use_additional_field = True
-
-        self.classes[table_type] = cls
-
-        return cls
+        return self.classes[table_type]
 
     def create_field(self, name: str, table_type_str: str) -> Field:
 
@@ -139,7 +129,7 @@ class Language:
 
             field = self.create_field(name, attr.value)
             if cls.has_field(field.name):
-                print("skipped dublicate field '{}' in '{}'".format(name, cls.name))
+                print("skipped duplicate field '{}' in '{}'".format(name, cls.name))
                 continue
 
             cls.fields.append(field)
@@ -229,6 +219,9 @@ def gen(args, xml_res_file, dest_folder):
         cls.xml_node = xml_node
         cls.table_name = class_name
         lang.classes[class_name] = cls
+
+        if class_name in args.use_additional_field:
+            cls.use_additional_field = True
 
         classes.append(cls)
 

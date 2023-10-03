@@ -71,7 +71,7 @@ public sealed partial class {{lang.args.static_class}}
     {% elif field.named_list %}
             {{field.nice_name}} = loader.UtilParse_Named(_xmlNode, "{{field.name}}", presetNode, {{field.parse_method_name}});
     {% elif field.clazz.use_additional_field %}
-            {{field.nice_name}} = loader.UtilParse_Single(_xmlNode, "{{field.name}}", presetNode, {{field.parse_method_name}});
+            {{field.nice_name}} = loader.UtilParse_Single(_xmlNode, "{{field.name}}", presetNode, ConfigFieldsParser.Parse_string);
             {{field.nice_name}}Object = loader.UtilParse_Single(_xmlNode, "{{field.name}}", presetNode, {{field.parse_method_name}});
     {% else %}
             {{field.nice_name}} = loader.UtilParse_Single(_xmlNode, "{{field.name}}", presetNode, {{field.parse_method_name}});
