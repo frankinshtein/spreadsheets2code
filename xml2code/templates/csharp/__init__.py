@@ -10,6 +10,7 @@ class CSLang(xml2code.Language):
     def __init__(self, *args, **kwargs):
         xml2code.Language.__init__(self, *args, **kwargs)
 
+"""
     def get_nice_class_name(self, column):
         return self.prefix + self.get_field_name(column)
 
@@ -17,7 +18,7 @@ class CSLang(xml2code.Language):
         items = column.split("_")
         ret = ''.join(word.capitalize() for word in items)
         return ret
-
+"""
 
 def create(args):
     config = CSLang(args)

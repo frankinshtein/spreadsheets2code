@@ -64,7 +64,7 @@ public sealed partial class {{lang.args.static_class}}
             {% for cls in classes_with_id %}
             //{{cls.name}} load
             {
-                XmlNode child = root.GetElementsByTagName("{{cls.name}}").Item(0)!.FirstChild;
+                XmlNode child = root.GetElementsByTagName("{{cls.table_name}}").Item(0)!.FirstChild;
 
                 var items = List{{cls.name}};
                 items.Clear();

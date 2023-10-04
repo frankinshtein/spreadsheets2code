@@ -9,7 +9,6 @@ from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 import sys
 
 
-
 class Class:
     def __init__(self, lang: 'Language', name: str, custom=True):
         self.fields = []
@@ -43,8 +42,7 @@ class Field:
         else:
             self.parse_method_name = f"loader.Parse_{table_type_name}"
 
-        self.nice_name = clazz.lang.get_nice_class_name(name)
-
+        self.nice_name = clazz.lang.get_nice_field_name(name)
 
 
 def first_rest_split(st):
@@ -76,11 +74,8 @@ class Language:
         ret = first.capitalize() + ''.join(word.capitalize() for word in rest)
         return self.prefix + ret
 
-    def get_field_name(self, column) -> str:
-        first, rest = first_rest_split(column)
-        first = first.casefold()
-        ret = first + ''.join(word.capitalize() for word in rest)
-        return ret
+    def get_nice_field_name(self, column) -> str:
+        return self.get_nice_class_name(column)
 
     def get_class(self, table_type: str) -> Class:
         return self.classes[table_type]
@@ -118,7 +113,7 @@ class Language:
 
         return Field(name, clazz, is_array, table_type_str, named_list)
 
-    def make_fields(self, args, cls: Class, attrs) -> None:
+    def make_fields(self, cls: Class, attrs) -> None:
 
         for attr in attrs:
             name = attr.name
@@ -139,9 +134,6 @@ class Language:
             else:
                 cls.fields_without_id.append(field)
 
-            # if field.type.use_additional_field:
-            #    field = self.create_field(name+"XXX", field.type.name, nice_fields)
-            #    cls.fields.append(field)
 
 """
         for ext in self.args.ext:
@@ -225,10 +217,9 @@ def gen(args, xml_res_file, dest_folder):
 
         classes.append(cls)
 
-
     for cls in classes:
         fields = cls.xml_node.attributes.values()
-        lang.make_fields(args, cls, fields)
+        lang.make_fields(cls, fields)
 
         template_args = {"cls": cls, "lang": lang, "loader": loader}
 
