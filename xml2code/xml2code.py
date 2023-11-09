@@ -240,6 +240,8 @@ def gen(args, xml_res_file, dest_folder):
 
     for item in listdir:
         name = os.path.join(dest_folder, item)
+        if not name.endswith(lang.extension):
+            continue
         if os.path.isfile(name):
             os.remove(name)
 
