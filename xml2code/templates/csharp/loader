@@ -61,31 +61,41 @@ public sealed partial class {{lang.args.static_class}}
 
             Timestamp = long.Parse(root.GetAttribute("timestamp"));
 
-            {% for cls in classes_with_id %}
-            //{{cls.name}} load
+            foreach (XmlNode node in root.ChildNodes)
             {
-                XmlNode child = root.GetElementsByTagName("{{cls.table_name}}").Item(0)!.FirstChild;
+                if (node is not XmlElement)
+                    continue;
 
-                var items = List{{cls.name}};
-                items.Clear();
-
-                var itemsMap = Dict{{cls.name}};
-                itemsMap.Clear();
-
-                while(child != null)
+                {% for cls in classes_with_id %}
+                //{{cls.name}} load
+                if (node.Name == "{{cls.table_name}}")
                 {
-                    if (child.NodeType == XmlNodeType.Element) {
-                        {{cls.name}} item = new {{cls.name}}();
-                        item.Id = UtilParse_String_(child, "id");
-                        itemsMap[item.Id.ToLower()] = item;
-                        item._xmlNode = child;
-                        item.IndexInArray = items.Count;
-                        items.Add(item);
+                    XmlNode child = node.FirstChild;
+
+                    var items = List{{cls.name}};
+                    items.Clear();
+
+                    var itemsMap = Dict{{cls.name}};
+                    itemsMap.Clear();
+
+                    while(child != null)
+                    {
+                        if (child.NodeType == XmlNodeType.Element) {
+                            {{cls.name}} item = new {{cls.name}}();
+                            item.Id = UtilParse_String_(child, "id");
+                            itemsMap[item.Id.ToLower()] = item;
+                            item._xmlNode = child;
+                            item.IndexInArray = items.Count;
+                            items.Add(item);
+                        }
+                        child = child.NextSibling;
                     }
-                    child = child.NextSibling;
+                    continue;
                 }
+                {% endfor %}
             }
-            {% endfor %}
+
+
 
             //init all classes
 
