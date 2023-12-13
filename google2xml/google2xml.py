@@ -100,6 +100,12 @@ def export_table(args, mat, sheet_name, tables):
         mat.set(0, 0, mat.get(0, 1))
 
     sheet_name = fix_field(sheet_name)
+    for rename in args.rename:
+        (src_name, target_name) = rename.split(":")
+        if sheet_name == src_name:
+            sheet_name = target_name
+            print(f"renamed {sheet_name} to {target_name}")
+
     y = 1
     result += '\t<' + sheet_name
 
@@ -321,7 +327,7 @@ def main(args):
     print("file saved: " + args.dest)
 
 
-if __name__ == '__main__':
+def run(params):
     import argparse
 
     parser = argparse.ArgumentParser(description="export google spreadsheet to xml")
@@ -332,10 +338,10 @@ if __name__ == '__main__':
     # parser.add_argument("-t", "--timestamp", help="adds timestamp from internet using ntplib", action="store_true", default=False)
     parser.add_argument("--service_account", help="google service account credentials json file")
     parser.add_argument("--client_credentials", help="client credentials json file")
-
+    parser.add_argument("--rename", help="add table rename", action='append', default=[])
     parser.add_argument("--preset", help="compile time preset", required=False, default="")
 
-    args = parser.parse_args()
+    args = parser.parse_args(params)
 
     if not args.dest:
         args.dest = args.src + ".xml"
@@ -348,3 +354,7 @@ if __name__ == '__main__':
         """
 
     main(args)
+
+
+if __name__ == "__main__":
+    run(None)
