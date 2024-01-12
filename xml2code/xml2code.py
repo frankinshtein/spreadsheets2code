@@ -178,19 +178,21 @@ def gen(args, xml_res_file, dest_folder):
     loader = args.prefix + args.loader
 
     def save_if_changed(save_class_name, content):
+        content = content.replace("\r\n", "\n")
         if save_class_name in listdir:
             listdir.remove(save_class_name)
         save_class_name = os.path.join(dest_folder, save_class_name)
-        print("saving {}".format(save_class_name))
         try:
             with open(save_class_name, "r") as rd:
                 data = rd.read()
                 if data == content:
+                    print(f"not changed '{save_class_name}'")
                     return
-        except IOError:
+        except IOError as err:
             pass
 
-        with open(save_class_name, "w") as rd:
+        print(f"saving '{save_class_name}'")
+        with open(save_class_name, "w", newline="\n") as rd:
             rd.write(content)
 
     mapping: str
@@ -224,7 +226,8 @@ def gen(args, xml_res_file, dest_folder):
         template_args = {"cls": cls, "lang": lang, "loader": loader}
 
         buffer = io.StringIO()
-        buffer.write(env.get_template("class").render(**template_args))
+        data = env.get_template("class").render(**template_args)
+        buffer.write(data)
         save_if_changed(cls.name + lang.extension, buffer.getvalue())
 
     classes_with_id = list(filter(lambda v: v.has_id, classes))
