@@ -78,6 +78,8 @@ class Language:
         return self.get_nice_class_name(column)
 
     def get_class(self, table_type: str) -> Class:
+        if table_type not in self.classes:
+            raise Exception(f"class not found '{table_type}'")
         return self.classes[table_type]
 
     def create_field(self, name: str, table_type_str: str) -> Field:

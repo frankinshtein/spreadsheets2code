@@ -25,6 +25,7 @@ public sealed partial class {{lang.args.static_class}}
 
     public class {{loader}}
     {
+        public XmlDocument Document;
         public string Preset;
         public long Timestamp;
 
@@ -32,9 +33,9 @@ public sealed partial class {{lang.args.static_class}}
         private string _current;
 
         {% for cls in classes %}
-        public List<{{cls.name}}> List{{cls.name}} = new ();
+        public List<{{cls.name}}> {{cls.name}}List = new ();
         {% if cls.has_id %}
-        public Dictionary<string, {{cls.name}}> Dict{{cls.name}} = new (StringComparer.InvariantCultureIgnoreCase);
+        public Dictionary<string, {{cls.name}}> {{cls.name}}Dict = new (StringComparer.InvariantCultureIgnoreCase);
         {% else %}
         {% endif %}
 
@@ -45,18 +46,25 @@ public sealed partial class {{lang.args.static_class}}
         {% endfor %}
 
 
-        public {{loader}}(){
+        public {{loader}}()
+        {
             {% for cls in classes_with_id %}
-            Parse_{{cls.table_name}} = str=> UtilGetItem(Dict{{cls.name}}, str, true);
+            Parse_{{cls.table_name}} = str=> UtilGetItem({{cls.name}}Dict, str, true);
             {% endfor %}
         }
 
         public void Load(Stream stream, string preset = null, bool throwError = true)
         {
-            Preset = preset;
-
             XmlDocument document = new XmlDocument();
             document.Load(stream);
+            Load(document, preset, throwError);
+        }
+
+        public void Load(XmlDocument document, string preset = null, bool throwError = true)
+        {
+            Preset = preset;
+            Document = document;
+
             XmlElement root = document.DocumentElement;
 
             Timestamp = long.Parse(root.GetAttribute("timestamp"));
@@ -66,10 +74,10 @@ public sealed partial class {{lang.args.static_class}}
             {
                 XmlNode child = root.GetElementsByTagName("{{cls.table_name}}").Item(0)!.FirstChild;
 
-                var items = List{{cls.name}};
+                var items = {{cls.name}}List;
                 items.Clear();
 
-                var itemsMap = Dict{{cls.name}};
+                var itemsMap = {{cls.name}}Dict;
                 itemsMap.Clear();
 
                 while(child != null)
@@ -93,7 +101,7 @@ public sealed partial class {{lang.args.static_class}}
             /////////////load - {{cls.name}}
             {
                 _current = "{{cls.name}}";
-                List<{{cls.name}}> items = List{{cls.name}};
+                List<{{cls.name}}> items = {{cls.name}}List;
 
                 for (int i = 0; i < items.Count; ++i)
                 {
@@ -106,11 +114,11 @@ public sealed partial class {{lang.args.static_class}}
                     //if (id.Length == 0)
                     //    continue;
 
-                    //{{cls.name}} item = UtilGetItem(Dict{{cls.name}}, id, true);
+                    //{{cls.name}} item = UtilGetItem({{cls.name}}Dict, id, true);
 
                     {{cls.name}} presetItem = null;
                     if (preset != null)
-                        presetItem = UtilGetItem(Dict{{cls.name}}, item.Id + "#" + preset, false);
+                        presetItem = UtilGetItem({{cls.name}}Dict, item.Id + "#" + preset, false);
                     if (presetItem != null)
                         presetNode = presetItem._xmlNode;
                     {% else %}
@@ -130,9 +138,9 @@ public sealed partial class {{lang.args.static_class}}
         public void AssignStaticInstances()
         {
             {% for cls in classes %}
-            {{cls.name}}.ItemsList = List{{cls.name}};
+            {{cls.name}}.ItemsList = {{cls.name}}List;
             {% if cls.has_id %}
-            {{cls.name}}.ItemsDict = Dict{{cls.name}};
+            {{cls.name}}.ItemsDict = {{cls.name}}Dict;
             {% else %}
             {% endif %}
             {% endfor %}
