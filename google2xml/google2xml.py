@@ -87,8 +87,6 @@ ids = ["id", "type"]
 def export_table(args, mat, sheet_name, tables):
     print("  {}".format(sheet_name))
 
-    preset = args.preset
-
     if mat.get(1, 0) in ids and mat.get(0, 1) not in ids:
         mat.set(1, 0, "id")
         mat.transpose()
@@ -155,19 +153,6 @@ def export_table(args, mat, sheet_name, tables):
 
             value = mat.get(x, y)
 
-            """
-
-            if preset:
-                for n, nm in enumerate(fields):
-                    if field + "@" + preset == nm:
-                        v = page[y][n]
-                        if v:
-                            value = v
-                        if v == "@":
-                            value = ""
-                        break
-                        
-            """
 
             q = quoteattr(value)
             if args.pretty:

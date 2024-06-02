@@ -75,7 +75,9 @@ class Language:
         return self.prefix + ret
 
     def get_nice_field_name(self, column) -> str:
-        return self.get_nice_class_name(column)
+        first, rest = first_rest_split(column)
+        ret = first.capitalize() + ''.join(word.capitalize() for word in rest)
+        return ret
 
     def get_class(self, table_type: str) -> Class:
         if table_type not in self.classes:
@@ -135,19 +137,6 @@ class Language:
                 cls.has_id = True
             else:
                 cls.fields_without_id.append(field)
-
-
-"""
-        for ext in self.args.ext:
-            # ext = ""
-            # building.field:EngNotation
-            (class_field_, type_) = ext.split(":")
-            (class_, field_) = class_field_.split(".")
-            if class_ == cls.name:
-                field = Field(field_, Class(self, type_), False, False)
-                field.ext = True
-                cls.fields.append(field)
-"""
 
 
 def gen(args, xml_res_file, dest_folder):
@@ -220,6 +209,20 @@ def gen(args, xml_res_file, dest_folder):
             cls.use_additional_field = True
 
         classes.append(cls)
+
+    for ext in args.ext:
+        # ext = ""
+        # building.field:EngNotation
+        (class_field_, type_) = ext.split(":")
+        (class_, field_) = class_field_.split(".")
+        if type_ not in lang.classes:
+            lang.add_class(type_, Class(lang, type_, True))
+
+        field = lang.create_field(field_, type_)
+        field.nice_name = field_
+        cls = lang.classes[class_]
+        cls.fields.append(field)
+        #field.clazz.fields.append(field)
 
     for cls in classes:
         fields = cls.xml_node.attributes.values()
