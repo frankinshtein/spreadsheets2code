@@ -54,7 +54,7 @@ def first_rest_split(st):
     return first, rest
 
 
-ids = ["id", "type"]
+ids = ["id",]
 
 
 class Language:
