@@ -1,8 +1,8 @@
 import pickle
-import os.path
+import os
 import time
-
 from xml.sax.saxutils import quoteattr
+from typing import Any, Dict, List, Tuple, Optional
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -13,7 +13,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 string_type = str
 
 
-def fix_field(name):
+def fix_field(name: str) -> str:
     res = ""
     for s in name:
         if s == "#":
@@ -26,43 +26,33 @@ def fix_field(name):
     return res
 
 
-class matrix:
-    def __init__(self):
-        self.cells = None
-        self.transposed = False
-        self.height = 0
-        self.width = 0
+class Matrix:
+    def __init__(self) -> None:
+        self.cells: List[List[str]] = []
+        self.transposed: bool = False
+        self.height: int = 0
+        self.width: int = 0
 
-    def init(self, cells):
+    def init(self, cells: List[List[str]]) -> None:
         self.cells = cells
         self.transposed = False
         self.height = len(cells)
-        self.width = len(cells[0])
+        self.width = len(cells[0]) if cells else 0
 
         for line in self.cells:
             if self.width < len(line):
                 self.width = len(line)
 
-    def init_sub(self, mat, pos, size):
-
-        self.width = size[0]
-        self.height = size[1]
-
+    def init_sub(self, mat: 'Matrix', pos: Tuple[int, int], size: Tuple[int, int]) -> None:
+        self.width, self.height = size
         self.transposed = False
+        self.cells = [[mat.get(x + pos[0], y + pos[1]) for x in range(self.width)] for y in range(self.height)]
 
-        self.cells = [None] * self.height
-        for y in range(self.height):
-            line = []
-            self.cells[y] = line
-
-            for x in range(self.width):
-                line.append(mat.get(x + pos[0], y + pos[1]))
-
-    def transpose(self):
+    def transpose(self) -> None:
         self.transposed = not self.transposed
         self.height, self.width = self.width, self.height
 
-    def get(self, x, y):
+    def get(self, x: int, y: int) -> str:
         if self.transposed:
             x, y = y, x
 
@@ -74,7 +64,7 @@ class matrix:
         except IndexError:
             return ""
 
-    def set(self, x, y, value):
+    def set(self, x: int, y: int, value: str) -> None:
         if self.transposed:
             x, y = y, x
 
@@ -84,7 +74,18 @@ class matrix:
 ids = ["id", "type"]
 
 
-def export_table(args, mat, sheet_name, tables):
+class Args:
+    def __init__(self, src: str, dest: str, pretty: bool, service_account: Optional[str], client_credentials: Optional[str], rename: List[str], preset: str) -> None:
+        self.src = src
+        self.dest = dest
+        self.pretty = pretty
+        self.service_account = service_account
+        self.client_credentials = client_credentials
+        self.rename = rename
+        self.preset = preset
+
+
+def export_table(args: Args, mat: Matrix, sheet_name: str, tables: Dict[str, str]) -> None:
     print("  {}".format(sheet_name))
 
     if mat.get(1, 0) in ids and mat.get(0, 1) not in ids:
@@ -99,16 +100,17 @@ def export_table(args, mat, sheet_name, tables):
 
     sheet_name = fix_field(sheet_name)
     for rename in args.rename:
-        (src_name, target_name) = rename.split(":")
+        src_name, target_name = rename.split(":")
         if sheet_name == src_name:
             sheet_name = target_name
-            print(f"renamed {sheet_name} to {target_name}")
+            print("renamed {} to {}".format(sheet_name, target_name))
 
     y = 1
     result += '\t<' + sheet_name
 
     y = 2
 
+    fields = {}
     for x in range(mat.width):
 
         field = mat.get(x, 0)
@@ -116,14 +118,17 @@ def export_table(args, mat, sheet_name, tables):
         if not field:
             continue
 
-        if "#" in field:
-            continue
-
         if field.startswith("*"):
             continue
 
+        if "#" in field:
+            continue
+
         tp = mat.get(x, 1)
-        result += " {}={}".format(fix_field(field), quoteattr(tp))
+        field_name = fix_field(field)
+        result += " {}={}".format(field_name, quoteattr(tp))
+
+        fields[field_name] = field_name
 
     result += '>\n'
 
@@ -153,12 +158,12 @@ def export_table(args, mat, sheet_name, tables):
 
             value = mat.get(x, y)
 
-
             q = quoteattr(value)
+            field_name = fix_field(field)
             if args.pretty:
-                z = u"\t\t\t{}={}\n".format(fix_field(field), q)
+                z = u"\t\t\t{}={}\n".format(field_name, q)
             else:
-                z = u" {}={}".format(fix_field(field), q)
+                z = u" {}={}".format(field_name, q)
 
             result += z
 
@@ -170,11 +175,10 @@ def export_table(args, mat, sheet_name, tables):
         y += 1
 
     result += '\t</' + sheet_name + '>\n'
-
     tables[sheet_name.lower()] = result
 
 
-def export_sheet(args, sheet_name, values, tables):
+def export_sheet(args: Args, sheet_name: str, values: Any, tables: Dict[str, str]) -> None:
     print("")
 
     if sheet_name.startswith("*"):
@@ -191,7 +195,7 @@ def export_sheet(args, sheet_name, values, tables):
     if len(page) < 1:
         return
 
-    mat = matrix()
+    mat = Matrix()
     mat.init(page)
 
     ret = False
@@ -226,7 +230,7 @@ def export_sheet(args, sheet_name, values, tables):
                         sub_height = my - y - 1
                         break
 
-                sub = matrix()
+                sub = Matrix()
                 sub.init_sub(mat, (x, y + 1), (sub_width, sub_height))
 
                 export_table(args, sub, name, tables)
@@ -238,7 +242,7 @@ def export_sheet(args, sheet_name, values, tables):
     export_table(args, mat, sheet_name, tables)
 
 
-def main(args):
+def main(args: Args) -> None:
     creds = None
 
     if args.service_account:
@@ -247,7 +251,6 @@ def main(args):
         # The file token.pickle stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
         # time.
-
         if os.path.exists('token.pickle'):
             with open('token.pickle', 'rb') as token:
                 creds = pickle.load(token)
@@ -293,10 +296,6 @@ def main(args):
     except OSError:
         pass
 
-    # enc = None
-    # if args.bom:
-    #    enc = "utf-8-sig"
-
     try:
         with open(args.dest, "rb") as old:
             data_old = old.read().decode("utf-8").split("\n", 1)[1]
@@ -312,15 +311,13 @@ def main(args):
     print("file saved: " + args.dest)
 
 
-def run(params):
+def run(params: Optional[List[str]]) -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="export google spreadsheet to xml")
     parser.add_argument("-s", "--src", help="source spreadsheet ID", required=True)
     parser.add_argument("-d", "--dest", help="destination file")
     parser.add_argument("--pretty", help="pretty xml render", default=True)
-    # parser.add_argument("-b", "--bom", help="add utf8 bom symbol", action="store_true", default=False)
-    # parser.add_argument("-t", "--timestamp", help="adds timestamp from internet using ntplib", action="store_true", default=False)
     parser.add_argument("--service_account", help="google service account credentials json file")
     parser.add_argument("--client_credentials", help="client credentials json file")
     parser.add_argument("--rename", help="add table rename", action='append', default=[])
@@ -331,14 +328,17 @@ def run(params):
     if not args.dest:
         args.dest = args.src + ".xml"
 
-    """
-    try:
-        os.remove(args.dest)
-    except:
-        pass
-        """
+    args_obj = Args(
+        src=args.src,
+        dest=args.dest,
+        pretty=args.pretty,
+        service_account=args.service_account,
+        client_credentials=args.client_credentials,
+        rename=args.rename,
+        preset=args.preset
+    )
 
-    main(args)
+    main(args_obj)
 
 
 if __name__ == "__main__":

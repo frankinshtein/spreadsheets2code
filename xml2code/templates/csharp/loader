@@ -232,7 +232,7 @@ public sealed partial class {{lang.args.static_class}}
         {
             if (Preset != null)
             {
-                string key = name + "#" + Preset;
+                string key = name + "-" + Preset;
                 XmlNode attr = node.Attributes!.GetNamedItem(key);
                 if (attr != null)
                     return attr.Value;
