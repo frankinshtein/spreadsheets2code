@@ -35,7 +35,7 @@ public sealed partial class {{lang.args.static_class}}
         {% for cls in classes %}
         public List<{{cls.name}}> {{cls.name}}List = new ();
         {% if cls.has_id %}
-        public Dictionary<string, {{cls.name}}> {{cls.name}}Dict = new (ConfigFieldsParser.UseStringComparer);
+        public Dictionary<string, {{cls.name}}> {{cls.name}}Dict = new ({{parser}}.UseStringComparer);
         {% else %}
         {% endif %}
 

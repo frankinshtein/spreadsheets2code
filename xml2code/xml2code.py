@@ -31,14 +31,15 @@ class Field:
                  clazz: Class,
                  is_array: bool,
                  table_type_name: str,
-                 named_list):
+                 named_list,
+                 parser:str):
         self.clazz = clazz
         self.name = name
         self.is_array = is_array
         self.named_list = named_list
         self.ext = False
         if clazz.custom:
-            self.parse_method_name = f"ConfigFieldsParser.Parse_{table_type_name}"
+            self.parse_method_name = f"{parser}.Parse_{table_type_name}"
         else:
             self.parse_method_name = f"loader.Parse_{table_type_name}"
 
@@ -115,7 +116,7 @@ class Language:
         if not clazz:
             clazz = self.get_class(table_type_str)
 
-        return Field(name, clazz, is_array, table_type_str, named_list)
+        return Field(name, clazz, is_array, table_type_str, named_list, self.args.parser)
 
     def make_fields(self, cls: Class, attrs) -> None:
 
@@ -224,22 +225,24 @@ def gen(args, xml_res_file, dest_folder):
         cls.fields.append(field)
         #field.clazz.fields.append(field)
 
+    print("generate classes")
     for cls in classes:
         fields = cls.xml_node.attributes.values()
         lang.make_fields(cls, fields)
 
-        template_args = {"cls": cls, "lang": lang, "loader": loader}
-
+        template_args = {"cls": cls, "lang": lang, "loader": loader, "parser":args.parser,}
+        #print(template_args)
         buffer = io.StringIO()
         data = env.get_template("class").render(**template_args)
         buffer.write(data)
         save_if_changed(cls.name + lang.extension, buffer.getvalue())
 
+    print("generate loader")
     classes_with_id = list(filter(lambda v: v.has_id, classes))
     classes_without_id = list(filter(lambda v: not v.has_id, classes))
 
     template_args = {"classes": classes, "classes_with_id": classes_with_id,
-                     "classes_without_id": classes_without_id,
+                     "classes_without_id": classes_without_id, "parser":args.parser,
                      "lang": lang, "loader": loader}
 
     buffer = io.StringIO()
@@ -270,6 +273,7 @@ def run(params):
     parser.add_argument('-e', '--ext', action='append', help='extended class fields', default=[])
     parser.add_argument('--mapping', action='append', help='fields remapping, example minutes:TimeSpan', default=[])
     parser.add_argument('--use_additional_field', action='append', help='extended class fields', default=[])
+    parser.add_argument('--parser', help='parser class', default="Parser")
     parser.add_argument('--not_nice_field', action='append', help='not nice fields classes array', default=[])
 
     args = parser.parse_args(params)
