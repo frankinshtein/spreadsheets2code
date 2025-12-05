@@ -25,12 +25,12 @@ public sealed partial class {{lang.args.static_class}}
 
     public class {{loader}}
     {
-        public XmlDocument Document;
+        public XmlDocument Document = null!;
         public string? Preset;
         public long Timestamp;
 
         public readonly List<string> ParseErrors = new();
-        private string _current;
+        private string _current = null!;
 
         {% for cls in classes %}
         public List<{{cls.name}}> {{cls.name}}List = new ();
@@ -65,9 +65,9 @@ public sealed partial class {{lang.args.static_class}}
             Preset = preset;
             Document = document;
 
-            XmlElement root = document.DocumentElement;
+            XmlElement root = document.DocumentElement!;
 
-            Timestamp = long.Parse(root.GetAttribute("timestamp"));
+            Timestamp = long.Parse(root!.GetAttribute("timestamp"));
 
             foreach (XmlNode node in root.ChildNodes)
             {
