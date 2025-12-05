@@ -15,20 +15,22 @@ public sealed partial class {{lang.args.static_class}}
 {% endif %}
     public sealed partial class {{cls.name}}:IConfigItem
     {
+#pragma warning disable CS8618
         {% for field in cls.fields %}
             {% if field.is_array and field.named_list %}
-        public Dictionary<string, List<{{ field.clazz.name }}>> {{ field.nice_name}};
+        public Dictionary<string, List<{{ field.clazz.name }}>> {{ field.nice_name}} = null!;
             {% elif field.is_array %}
-        public List<{{ field.clazz.name }}> {{ field.nice_name}};
+        public List<{{ field.clazz.name }}> {{ field.nice_name}} = null!;
             {% elif field.named_list %}
-        public Dictionary<string, {{ field.clazz.name }}> {{ field.nice_name}};
+        public Dictionary<string, {{ field.clazz.name }}> {{ field.nice_name}} = null!;
             {% elif field.clazz.use_additional_field %}
-        public string {{ field.nice_name}} {get; set;}
-        public {{ field.clazz.name }} {{ field.nice_name}}Object {get; set;}
+        public string {{ field.nice_name}} {get; set;} = null!;
+        public {{ field.clazz.name }} {{ field.nice_name}}Object {get; set;} = null!;
             {% else %}
         public {{ field.clazz.name }} {{ field.nice_name}} {get; set;}
             {% endif %}
         {% endfor %}
+#pragma warning restore CS8618
         public int IndexInArray {get;set;}
 
         public override string ToString()
@@ -39,12 +41,14 @@ public sealed partial class {{lang.args.static_class}}
         {% if cls.has_id %}
         public static {{cls.name}} Get(string id)
         {
-            return {{loader}}.UtilGetItem(ItemsDict, id, true);
+        #pragma warning disable CS8603
+            return {{loader}}.UtilGetItem(ItemsDict, id, true)!;
+        #pragma warning restore CS8603
         }
 
-        public static {{cls.name}} GetOrDefault(string id, {{cls.name}} def = null)
+        public static {{cls.name}}? GetOrDefault(string id, {{cls.name}}? def = null)
         {
-            {{cls.name}} res = {{loader}}.UtilGetItem(ItemsDict, id, false);
+            {{cls.name}}? res = {{loader}}.UtilGetItem(ItemsDict, id, false);
             if (res != null)
                 return res;
             return def;
@@ -52,15 +56,15 @@ public sealed partial class {{lang.args.static_class}}
         {% endif %}
 
         #region Internal
-        public static List<{{cls.name}}> ItemsList;
+        public static List<{{cls.name}}> ItemsList = null!;
         {% if cls.has_id %}
-        public static Dictionary<string, {{cls.name}}> ItemsDict;
+        public static Dictionary<string, {{cls.name}}> ItemsDict = null!;
         {% endif %}
 
-        public XmlNode _xmlNode;
+        public XmlNode _xmlNode = null!;
 
 
-        public void Init(XmlNode presetNode, {{loader}} loader)
+        public void Init(XmlNode? presetNode, {{loader}} loader)
         {
 {% for field in cls.fields_without_id %}
     {% if field.ext %}
