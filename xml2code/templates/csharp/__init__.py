@@ -22,7 +22,7 @@ class CSLang(xml2code.Language):
 
 def create(args):
     config = CSLang(args)
-    config.add_class("string", xml2code.Class(config, "string"))
+    config.add_class("string", xml2code.Class(config, "string", is_object=True))
     config.add_class("int", xml2code.Class(config, "int"))
     config.add_class("float", xml2code.Class(config, "float"))
     config.add_class("double", xml2code.Class(config, "double"))

@@ -10,7 +10,7 @@ import sys
 
 
 class Class:
-    def __init__(self, lang: 'Language', name: str, custom=True):
+    def __init__(self, lang: 'Language', name: str, custom:bool=True, is_object:bool=False):
         self.fields = []
         self.fields_without_id = []
         self.name = name
@@ -20,6 +20,7 @@ class Class:
         self.xml_node = None
         self.lang = lang
         self.table_name = name
+        self.is_object = is_object
 
     def has_field(self, name):
         names = list(map(lambda field: field.name, self.fields))
@@ -42,6 +43,11 @@ class Field:
             self.parse_method_name = f"{parser}.Parse_{table_type_name}"
         else:
             self.parse_method_name = f"loader.Parse_{table_type_name}"
+
+        if clazz.is_object:
+            self.initialize_str = " = null!;"
+        else:
+            self.initialize_str = ""
 
         self.nice_name = clazz.lang.get_nice_field_name(name)
 
@@ -201,7 +207,7 @@ def gen(args, xml_res_file, dest_folder):
         class_name = xml_node.nodeName
 
         print(f"parsing {class_name}")
-        cls = Class(lang, lang.get_nice_class_name(class_name), False)
+        cls = Class(lang, lang.get_nice_class_name(class_name), False, is_object=True)
         cls.xml_node = xml_node
         cls.table_name = class_name
         lang.classes[class_name] = cls

@@ -15,7 +15,7 @@ public sealed partial class {{lang.args.static_class}}
 {% endif %}
     public sealed partial class {{cls.name}}:IConfigItem
     {
-#pragma warning disable CS8618
+
         {% for field in cls.fields %}
             {% if field.is_array and field.named_list %}
         public Dictionary<string, List<{{ field.clazz.name }}>> {{ field.nice_name}} = null!;
@@ -27,10 +27,10 @@ public sealed partial class {{lang.args.static_class}}
         public string {{ field.nice_name}} {get; set;} = null!;
         public {{ field.clazz.name }} {{ field.nice_name}}Object {get; set;} = null!;
             {% else %}
-        public {{ field.clazz.name }} {{ field.nice_name}} {get; set;}
+        public {{ field.clazz.name }} {{ field.nice_name}} {get; set;}{{field.initialize_str}}
             {% endif %}
         {% endfor %}
-#pragma warning restore CS8618
+
         public int IndexInArray {get;set;}
 
         public override string ToString()
