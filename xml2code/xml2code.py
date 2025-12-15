@@ -33,7 +33,8 @@ class Field:
                  is_array: bool,
                  table_type_name: str,
                  named_list,
-                 parser:str):
+                 parser:str,
+                 is_nullable:bool=False):
         self.clazz = clazz
         self.name = name
         self.is_array = is_array
@@ -44,10 +45,19 @@ class Field:
         else:
             self.parse_method_name = f"loader.Parse_{table_type_name}"
 
-        if clazz.is_object:
-            self.initialize_str = " = null!;"
-        else:
-            self.initialize_str = ""
+        self.is_nullable = is_nullable
+
+        self.nullable_str = ""
+        self.initialize_str = ""
+
+        if self.clazz.is_object:
+            if self.is_nullable:
+                self.nullable_str = "?"
+            else:
+                self.initialize_str = " = null!;"
+
+
+
 
         self.nice_name = clazz.lang.get_nice_field_name(name)
 
@@ -95,6 +105,7 @@ class Language:
 
         clazz: Class | None = None
         is_array = False
+        is_nullable = True
 
         if not table_type_str:
             clazz = self.get_class("string")
@@ -122,7 +133,11 @@ class Language:
         if not clazz:
             clazz = self.get_class(table_type_str)
 
-        return Field(name, clazz, is_array, table_type_str, named_list, self.args.parser)
+
+        if clazz.name == "string":
+            is_nullable = False
+
+        return Field(name, clazz, is_array, table_type_str, named_list, self.args.parser, is_nullable=is_nullable)
 
     def make_fields(self, cls: Class, attrs) -> None:
 

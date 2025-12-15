@@ -27,7 +27,7 @@ public sealed partial class {{lang.args.static_class}}
         public string {{ field.nice_name}} {get; set;} = null!;
         public {{ field.clazz.name }} {{ field.nice_name}}Object {get; set;} = null!;
             {% else %}
-        public {{ field.clazz.name }} {{ field.nice_name}} {get; set;}{{field.initialize_str}}
+        public {{ field.clazz.name }}{{field.nullable_str}} {{ field.nice_name}} {get; set;}{{field.initialize_str}}
             {% endif %}
         {% endfor %}
 
